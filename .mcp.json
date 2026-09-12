@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "angular": {
+      "command": "pnpm",
+      "args": ["ng", "mcp"]
+    },
+    "spartan": {
+      "command": "pnpm",
+      "args": ["dlx", "@spartan-ng/mcp"]
+    }
+  }
+}

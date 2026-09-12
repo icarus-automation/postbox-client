@@ -1,0 +1,151 @@
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+@import '@spartan-ng/brain/hlm-tailwind-preset.css';
+
+/*
+  Brand tokens. This block and app.preset-free theming are the ONLY places
+  hex literals belong. Components must use the Tailwind tokens below.
+
+  Names follow the spartan/shadcn contract, because helm components read them
+  directly. Renaming one silently breaks every helm component.
+  Light scheme only - dark mode is intentionally not supported.
+*/
+:root {
+  color-scheme: light;
+
+  --radius: 0.25rem;
+
+  /* surfaces */
+  --background: #f8fbff;
+  --foreground: #0b161f;
+  --card: #ffffff;
+  --card-foreground: #0b161f;
+  --popover: #ffffff;
+  --popover-foreground: #0b161f;
+
+  /* brand */
+  --primary: #0b4ea2;
+  --primary-hover: #03285a;
+  --primary-foreground: #ffffff;
+
+  /* subtle fills. secondary and accent are LOW-contrast surfaces in this
+     contract (button-secondary, hover rows, menu highlight) - not brand color. */
+  --secondary: #e8f1ff;
+  --secondary-foreground: #0b4ea2;
+  --accent: #eff5fc;
+  --accent-foreground: #0b4ea2;
+  --muted: #f1f5f9;
+  --muted-foreground: #5b7183;
+
+  /* text roles */
+  --text-heading: #0b161f;
+  --text-body: #365261;
+
+  /* lines and focus. the vivid cyan lives here: high-visibility focus ring. */
+  --border: #dbe5f0;
+  --input: #dbe5f0;
+  --ring: #22d3ee;
+
+  /* status */
+  --destructive: #ff4b4b;
+  --destructive-foreground: #ffffff;
+  --muted-destructive: #ffe1de;
+  --success: #3dbe81;
+  --success-foreground: #ffffff;
+  --muted-success: #d1ede0;
+
+  /* sidebar surface */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0b161f;
+  --sidebar-primary: #0b4ea2;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eff5fc;
+  --sidebar-accent-foreground: #0b4ea2;
+  --sidebar-border: #dbe5f0;
+  --sidebar-ring: #22d3ee;
+
+  /* dashboard charts */
+  --chart-1: #0b4ea2;
+  --chart-2: #22d3ee;
+  --chart-3: #3dbe81;
+  --chart-4: #f5a524;
+  --chart-5: #ff4b4b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-heading: var(--text-heading);
+  --color-body: var(--text-body);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-muted-destructive: var(--muted-destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-muted-success: var(--muted-success);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-base: var(--radius);
+
+  --font-heading: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-body font-body;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-heading font-semibold;
+  }
+}
+
+@utility page-container {
+  @apply mx-auto w-full max-w-7xl px-4;
+}
