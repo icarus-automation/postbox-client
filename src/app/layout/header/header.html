@@ -1,6 +1,52 @@
-<header class="border-b border-border bg-card">
-  <div class="page-container flex h-14 items-center justify-between gap-4">
-    <!-- DELETE ME: reads package.json name so a forgotten rename is visible. -->
-    <span class="font-heading text-base font-semibold text-heading">angular-boilerplate</span>
-  </div>
+<header class="shell-gutter flex h-14 items-center justify-between gap-4 border-b border-border bg-card">
+  <a routerLink="/leads" class="font-heading text-base font-semibold text-heading">Lead Inbox</a>
+
+  @if (user(); as user) {
+    <div class="flex items-center gap-3">
+      <span class="hidden text-sm text-muted-foreground sm:inline">{{ user.email }}</span>
+      <!-- Phones have no sidebar, so this link is their way into Settings. -->
+      <a
+        hlmBtn
+        variant="ghost"
+        size="icon-sm"
+        routerLink="/settings"
+        aria-label="Settings"
+        class="md:hidden"
+      >
+        <ng-icon name="lucideSettings" aria-hidden="true" />
+      </a>
+
+      <!-- Signing out throws away work in progress, so it asks before it does. -->
+      <hlm-dialog #signOutDialog class="flex">
+        <button hlmDialogTrigger hlmBtn variant="ghost" size="sm" [disabled]="signingOut()">
+          <ng-icon name="lucideLogOut" aria-hidden="true" />
+          Sign out
+        </button>
+
+        <hlm-dialog-content *hlmDialogPortal class="sm:max-w-md">
+          <div hlmDialogHeader>
+            <h2 hlmDialogTitle>Sign out?</h2>
+            <p hlmDialogDescription>
+              You will need to sign in again.
+            </p>
+          </div>
+
+          <div hlmDialogFooter>
+            <button hlmBtn variant="outline" type="button" (click)="signOutDialog.close()">
+              Stay signed in
+            </button>
+            <button
+              hlmBtn
+              type="button"
+              [disabled]="signingOut()"
+              (click)="signOutDialog.close(); signOut()"
+            >
+              <ng-icon name="lucideLogOut" aria-hidden="true" />
+              Sign out
+            </button>
+          </div>
+        </hlm-dialog-content>
+      </hlm-dialog>
+    </div>
+  }
 </header>

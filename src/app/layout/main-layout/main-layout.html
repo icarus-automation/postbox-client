@@ -8,13 +8,12 @@
 <div class="flex min-h-dvh flex-col bg-background">
   <app-header />
 
-  <div class="flex flex-1 overflow-hidden">
+  <div class="flex flex-1">
     <app-sidebar />
 
-    <main id="main-content" tabindex="-1" class="flex-1 overflow-y-auto py-8">
-      <div class="page-container">
-        <router-outlet />
-      </div>
+    <!-- Pages choose their width with page-wide or page-standard on their host. -->
+    <main id="main-content" tabindex="-1" class="shell-gutter min-w-0 flex-1 py-8">
+      <router-outlet />
     </main>
   </div>
 </div>

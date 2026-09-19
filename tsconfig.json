@@ -22,6 +22,51 @@
       ],
       "@ui/utils": [
         "./src/app/shared/ui/utils/src/index.ts"
+      ],
+      "@ui/card": [
+        "./src/app/shared/ui/card/src/index.ts"
+      ],
+      "@ui/input": [
+        "./src/app/shared/ui/input/src/index.ts"
+      ],
+      "@ui/label": [
+        "./src/app/shared/ui/label/src/index.ts"
+      ],
+      "@ui/badge": [
+        "./src/app/shared/ui/badge/src/index.ts"
+      ],
+      "@ui/table": [
+        "./src/app/shared/ui/table/src/index.ts"
+      ],
+      "@ui/alert": [
+        "./src/app/shared/ui/alert/src/index.ts"
+      ],
+      "@ui/spinner": [
+        "./src/app/shared/ui/spinner/src/index.ts"
+      ],
+      "@ui/skeleton": [
+        "./src/app/shared/ui/skeleton/src/index.ts"
+      ],
+      "@ui/textarea": [
+        "./src/app/shared/ui/textarea/src/index.ts"
+      ],
+      "@ui/checkbox": [
+        "./src/app/shared/ui/checkbox/src/index.ts"
+      ],
+      "@ui/field": [
+        "./src/app/shared/ui/field/src/index.ts"
+      ],
+      "@ui/dialog": [
+        "./src/app/shared/ui/dialog/src/index.ts"
+      ],
+      "@ui/popover": [
+        "./src/app/shared/ui/popover/src/index.ts"
+      ],
+      "@ui/select": [
+        "./src/app/shared/ui/select/src/index.ts"
+      ],
+      "@ui/sonner": [
+        "./src/app/shared/ui/sonner/src/index.ts"
       ]
     },
     "target": "ES2022",

@@ -42,6 +42,9 @@
   /* text roles */
   --text-heading: #0b161f;
   --text-body: #365261;
+  /* --destructive is a fill: at 3.3:1 on white it is too light to set as text.
+     This is the same red darkened until error copy clears WCAG AA. */
+  --text-destructive: #b91c1c;
 
   /* lines and focus. the vivid cyan lives here: high-visibility focus ring. */
   --border: #dbe5f0;
@@ -55,6 +58,9 @@
   --success: #3dbe81;
   --success-foreground: #ffffff;
   --muted-success: #d1ede0;
+  --warning: #f5a524;
+  --warning-foreground: #0b161f;
+  --muted-warning: #fdecd0;
 
   /* sidebar surface */
   --sidebar: #ffffff;
@@ -94,6 +100,7 @@
 
   --color-heading: var(--text-heading);
   --color-body: var(--text-body);
+  --color-destructive-ink: var(--text-destructive);
 
   --color-border: var(--border);
   --color-input: var(--input);
@@ -105,6 +112,9 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-muted-success: var(--muted-success);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-muted-warning: var(--muted-warning);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -146,6 +156,32 @@
   }
 }
 
-@utility page-container {
-  @apply mx-auto w-full max-w-7xl px-4;
+/*
+  App shell. The header and the main column share one side gutter, so the brand lines
+  up with the sidebar links and the header actions end where a wide page ends.
+*/
+@utility shell-gutter {
+  @apply px-4 md:px-6;
+}
+
+/*
+  The only two page widths inside MainLayout. A page puts one on its host element.
+  Both start at the main column's left edge, so titles line up from page to page.
+  Wide fills the column, for tables. Standard caps one record at a readable width, and
+  everything on that page shares its left and right edges.
+*/
+@utility page-wide {
+  @apply block w-full min-w-0;
+}
+
+@utility page-standard {
+  @apply block w-full max-w-4xl min-w-0;
+}
+
+/*
+  The small label over a value or a section on a record page. One utility rather than the
+  same five classes on every heading, so a record reads as one set of labels.
+*/
+@utility field-label {
+  @apply text-xs font-medium tracking-wide text-muted-foreground uppercase;
 }

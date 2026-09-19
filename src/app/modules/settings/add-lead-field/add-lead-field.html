@@ -1,0 +1,117 @@
+<form [formRoot]="form" class="grid gap-6">
+  <div hlmDialogHeader>
+    <h2 id="add-lead-field-heading" class="text-base leading-none font-medium">Add field</h2>
+    <p class="text-sm text-muted-foreground">The new field is added at the end of the list.</p>
+  </div>
+
+  <div class="grid gap-4">
+    @if (error(); as message) {
+      <div hlmAlert variant="destructive">
+        <p hlmAlertTitle>Field not added</p>
+        <p hlmAlertDescription>{{ message }}</p>
+      </div>
+    }
+
+    <!-- Each field ties its label, control, help and error together, so `for` and
+         `aria-describedby` come from the markup rather than hand-written ids. -->
+    <div hlmField class="gap-1.5">
+      <label hlmFieldLabel>Label</label>
+      <input hlmInput id="lead-field-label" type="text" autocomplete="off" [formField]="form.label" />
+      <p hlmFieldDescription id="lead-field-label-help" class="text-xs">
+        Shown on leads, for example Budget.
+      </p>
+      <hlm-field-error id="lead-field-label-error">
+        {{ form.label().errors()[0]?.message }}
+      </hlm-field-error>
+    </div>
+
+    <div hlmField class="gap-1.5">
+      <label hlmFieldLabel>Type</label>
+      <!-- Full width, like every other control here, and the closed control reads the name
+           on screen rather than the key the API takes. -->
+      <hlm-select class="w-full" [formField]="form.type" [itemToString]="typeLabel">
+        <hlm-select-trigger class="w-full" buttonId="lead-field-type">
+          <hlm-select-value />
+        </hlm-select-trigger>
+
+        <hlm-select-content *hlmSelectPortal>
+          @for (type of types; track type.value) {
+            <hlm-select-item [value]="type.value">{{ type.label }}</hlm-select-item>
+          }
+        </hlm-select-content>
+      </hlm-select>
+    </div>
+
+    @if (isSelect()) {
+      <div hlmField class="gap-1.5">
+        <label hlmFieldLabel>Options</label>
+        <textarea hlmTextarea id="lead-field-options" rows="4" [formField]="form.options"></textarea>
+        <p hlmFieldDescription id="lead-field-options-help" class="text-xs">
+          One option per line. Values must match an option exactly, including capitalization.
+        </p>
+        <hlm-field-error id="lead-field-options-error">
+          {{ form.options().errors()[0]?.message }}
+        </hlm-field-error>
+      </div>
+    }
+
+    <div class="grid gap-1.5">
+      <div class="flex items-center gap-2">
+        <!--
+          The checkbox keeps its own label and help text. Its real control sits inside the
+          component, so the field's describedBy would land on the wrapper instead.
+        -->
+        <hlm-checkbox
+          inputId="lead-field-required"
+          aria-describedby="lead-field-required-help"
+          [formField]="form.isRequired"
+        />
+        <label hlmLabel for="lead-field-required">Required on new leads</label>
+      </div>
+      <p id="lead-field-required-help" class="text-xs text-muted-foreground">
+        New leads must include this field. Existing leads are unchanged.
+      </p>
+    </div>
+
+    <section class="grid gap-2" aria-labelledby="add-lead-field-advanced">
+      <h3 id="add-lead-field-advanced" class="text-sm font-medium text-heading">Advanced</h3>
+
+      <div hlmField class="gap-1.5">
+        <label hlmFieldLabel>Key</label>
+        <input
+          hlmInput
+          id="lead-field-key"
+          type="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          class="font-mono"
+          [formField]="form.key"
+          (input)="keyTyped($event)"
+        />
+        <p hlmFieldDescription id="lead-field-key-help" class="text-xs">
+          API name for this field, generated from the label. It cannot be changed later.
+        </p>
+        <hlm-field-error id="lead-field-key-error">{{ form.key().errors()[0]?.message }}</hlm-field-error>
+      </div>
+    </section>
+  </div>
+
+  <div hlmDialogFooter>
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="form().submitting()"
+      (click)="dismissed.emit()"
+    >
+      Cancel
+    </button>
+    <button hlmBtn type="submit" [disabled]="form().submitting()">
+      @if (form().submitting()) {
+        <hlm-spinner aria-label="Adding field" />
+      }
+      {{ form().submitting() ? 'Adding' : 'Add field' }}
+    </button>
+  </div>
+</form>

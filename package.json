@@ -1,5 +1,5 @@
 {
-  "name": "angular-boilerplate",
+  "name": "cms-client",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -19,6 +19,8 @@
     "@angular/forms": "^22.1.6",
     "@angular/platform-browser": "^22.1.6",
     "@angular/router": "^22.1.6",
+    "@ng-icons/core": "^32.2.0",
+    "@ng-icons/lucide": "^32.2.0",
     "@spartan-ng/brain": "^1.4.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

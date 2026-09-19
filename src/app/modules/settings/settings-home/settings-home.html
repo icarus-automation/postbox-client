@@ -1,0 +1,57 @@
+<div class="grid gap-8">
+  <header>
+    <h1 class="text-xl">Settings</h1>
+    <p class="mt-1 text-sm text-muted-foreground">Your organization, and what a lead holds.</p>
+  </header>
+
+  @for (section of sections; track section.headingId) {
+    <section [attr.aria-labelledby]="section.headingId" class="grid gap-3">
+      <h2 [id]="section.headingId" class="text-base">{{ section.heading }}</h2>
+
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @for (entry of section.entries; track entry.title) {
+          <!--
+            One card shape either way. The link inside stretches its ::after over the card,
+            so the whole card is the target, and a card with nowhere to go is dashed and
+            quiet instead of a second, disabled-looking shape.
+          -->
+          <div
+            class="relative rounded-base border p-4 transition-colors"
+            [class]="
+              entry.route
+                ? 'border-border bg-card hover:border-primary/40 hover:bg-accent/40'
+                : 'border-dashed border-border bg-card/40'
+            "
+          >
+            <span
+              class="flex size-9 items-center justify-center rounded-base bg-muted text-muted-foreground"
+            >
+              <ng-icon [name]="entry.icon" aria-hidden="true" />
+            </span>
+
+            <h3 class="mt-4 flex flex-wrap items-center gap-2 text-sm font-medium text-heading">
+              @if (entry.route; as route) {
+                <a
+                  [routerLink]="route"
+                  class="underline-offset-4 outline-none after:absolute after:inset-0 after:rounded-base hover:underline focus-visible:underline focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                >
+                  {{ entry.title }}
+                </a>
+              } @else {
+                {{ entry.title }}
+              }
+
+              @if (entry.soon) {
+                <span hlmBadge variant="neutral" class="text-[0.625rem] tracking-wide uppercase">
+                  Soon
+                </span>
+              }
+            </h3>
+
+            <p class="mt-1 text-sm text-muted-foreground">{{ entry.description }}</p>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

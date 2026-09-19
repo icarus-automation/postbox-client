@@ -1,0 +1,118 @@
+<div class="grid gap-5">
+  <!-- Settings is a screen of its own now, so a sub-page says where it came from. -->
+  <a
+    routerLink="/settings"
+    class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:text-heading hover:underline"
+  >
+    <ng-icon name="lucideArrowLeft" aria-hidden="true" />
+    Back to settings
+  </a>
+
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-xl">Lead fields</h1>
+      <p class="mt-1 max-w-xl text-sm text-muted-foreground">
+        These fields appear on every lead, in this order. Built-in fields cannot be removed.
+      </p>
+      <!-- Always in the DOM so a screen reader hears the change, and empty it takes no room. -->
+      <p role="status" class="mt-1 text-sm text-muted-foreground">{{ announcement() }}</p>
+    </div>
+
+    @if (canAdd()) {
+      <div class="flex flex-wrap items-center gap-4">
+        <hlm-dialog #addDialog aria-labelledby="add-lead-field-heading">
+          <button hlmDialogTrigger hlmBtn>
+            <ng-icon name="lucidePlus" aria-hidden="true" />
+            Add field
+          </button>
+
+          <hlm-dialog-content *hlmDialogPortal>
+            <app-add-lead-field
+              [takenKeys]="takenKeys()"
+              (added)="add($event); addDialog.close()"
+              (dismissed)="addDialog.close()"
+            />
+          </hlm-dialog-content>
+        </hlm-dialog>
+      </div>
+    }
+  </header>
+
+  @if (errorMessage(); as message) {
+    <div hlmAlert variant="destructive">
+      <p hlmAlertTitle>Could not load lead fields</p>
+      <p hlmAlertDescription>{{ message }}</p>
+      <button hlmBtn variant="outline" size="sm" class="mt-3 w-fit" (click)="reload()">
+        Try again
+      </button>
+    </div>
+  } @else if (fields.isLoading()) {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable aria-label="Lead fields, loading">
+        <tbody hlmTBody>
+          @for (row of skeletonRows; track row) {
+            <tr hlmTr>
+              <td hlmTd class="py-3">
+                <span hlmSkeleton class="h-4 w-48"></span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="rounded-base border border-dashed border-border bg-card px-6 py-14 text-center">
+      <h2 class="text-base">No lead fields yet</h2>
+      <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        Add your first field.
+      </p>
+    </div>
+  } @else {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable aria-label="Lead fields">
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh scope="col">Field</th>
+            <th hlmTh scope="col">Type</th>
+            <th hlmTh scope="col">Required on new leads</th>
+            <th hlmTh scope="col">Key</th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (row of rows(); track row.field.id) {
+            <tr hlmTr>
+              <th hlmTh scope="row" class="h-auto py-3 align-top font-normal text-heading">
+                <!-- Badges sit on the same line as the label, so every row is one height. -->
+                <span class="flex flex-wrap items-center gap-2">
+                  {{ row.field.label }}
+                  @if (row.field.isSystem) {
+                    <span hlmBadge variant="neutral">Built-in</span>
+                  }
+                  @if (row.field.isReadOnly) {
+                    <!-- `&ngsp;` keeps the two badges apart in the text a reader hears. -->
+                    &ngsp;<span hlmBadge variant="outline">Automatic</span>
+                  }
+                </span>
+              </th>
+              <td hlmTd class="py-3 align-top">{{ row.type }}</td>
+              <td hlmTd class="py-3 align-top text-muted-foreground">
+                @if (row.requirement; as requirement) {
+                  {{ requirement }}
+                } @else {
+                  <span class="sr-only">Not applicable</span>
+                }
+              </td>
+              <td hlmTd class="py-3 align-top">
+                <code class="font-mono text-xs text-muted-foreground">{{ row.field.key }}</code>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="max-w-xl text-sm text-muted-foreground">
+      Keys identify fields in the API and cannot change. Labels can.
+    </p>
+  }
+</div>

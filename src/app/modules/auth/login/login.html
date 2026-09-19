@@ -1,0 +1,44 @@
+<app-auth-shell heading="Sign in to Lead Inbox">
+  <form [formRoot]="form" class="grid gap-4">
+    @if (error(); as message) {
+      <div hlmAlert variant="destructive">
+        <p hlmAlertTitle>{{ auth.isSignedIn() ? 'Could not open leads' : 'Sign in failed' }}</p>
+        <p hlmAlertDescription>{{ message }}</p>
+      </div>
+    }
+
+    <!-- The field ties the label, the control and the error together. It fills in `for` and
+         `aria-describedby`, and shows the error once the person has had a go at the field. -->
+    <div hlmField class="gap-1.5">
+      <label hlmFieldLabel>Email</label>
+      <input hlmInput id="email" type="email" autocomplete="email" [formField]="form.email" />
+      <hlm-field-error id="email-error">Enter your email.</hlm-field-error>
+    </div>
+
+    <div hlmField class="gap-1.5">
+      <label hlmFieldLabel>Password</label>
+      <input
+        hlmInput
+        id="password"
+        type="password"
+        autocomplete="current-password"
+        [formField]="form.password"
+      />
+      <hlm-field-error id="password-error">Enter your password.</hlm-field-error>
+    </div>
+
+    <button hlmBtn type="submit" class="mt-1 w-full" [disabled]="form().submitting()">
+      @if (form().submitting()) {
+        <hlm-spinner aria-label="Signing in" />
+      }
+      {{ form().submitting() ? 'Signing in' : 'Sign in' }}
+    </button>
+  </form>
+
+  <p authShellFooter>
+    No account yet?
+    <a routerLink="/sign-up" class="font-medium text-primary underline underline-offset-4">
+      Create one
+    </a>
+  </p>
+</app-auth-shell>

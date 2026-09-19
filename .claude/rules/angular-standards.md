@@ -41,7 +41,11 @@ Your code must reflect production-grade practices used in enterprise application
 - Use `input()` and `output()` functions instead of decorators
 - Use `computed()` for derived state
 - Prefer inline templates for components under roughly 20 lines of markup; use an external `<name>.html` beyond that
-- Prefer Reactive Forms or Signal Forms (stable in v22) over template-driven forms
+- Prefer Signal Forms (stable in v22) for forms with a fixed shape, and Reactive Forms
+  where the controls are built at runtime. Never template-driven forms
+- Build every form control out of the field helm (`hlmField`, `hlmFieldLabel`,
+  `hlmFieldDescription`, `hlm-field-error`) rather than hand-wiring `for` and
+  `aria-describedby`
 - Do NOT use `ngClass`, use `class` bindings instead
 - Do NOT use `ngStyle`, use `style` bindings instead
 - When using external templates/styles, use paths relative to the component TS file

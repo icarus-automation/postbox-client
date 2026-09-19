@@ -20,7 +20,8 @@ freely, rename existing ones only with a full sweep.
 - Or the underlying vars: `var(--primary)`, `var(--text-body)`, `var(--border)`.
 - **NEVER hardcode hex in components or templates.** Hex lives in `styles.css` only.
 - Raw Tailwind palette colors (`bg-blue-500`) are allowed, but leave a one-line comment saying why, so a reviewer can decide whether to promote it into the theme.
-- Status UI uses `destructive` / `muted-destructive` / `success` / `muted-success`. Do not invent new red or green shades.
+- Status UI uses `destructive` / `muted-destructive` / `success` / `muted-success` / `warning` / `muted-warning`. Do not invent new red, green or amber shades.
+- The `destructive`, `success` and `warning` hues are fills. They are too light to read as text on a light surface (all under 4.5:1). Set error copy in `text-destructive-ink`, and put status labels on the muted tint in `text-heading`, the way the `success`, `warning` and `neutral` badge variants do.
 
 ### Semantic trap
 

@@ -1,55 +1,50 @@
-# angular-boilerplate
+# cms-client
 
-An opinionated Angular starter for admin dashboards, data-heavy CRUD apps, and MVPs.
+Lead Inbox: the web client for cms-api. Agents and automations post leads into the API
+with an API key. This app is where a person signs in, reads them, and works them.
 
-Ships agent-ready for Claude Code, Cursor, and Codex: shared rules in `AGENTS.md`, the `unslop` skill, and MCP servers for both Angular and spartan/ui, so your AI tools follow current Angular 22 conventions instead of guessing at v16 ones.
+It covers sign in and sign up, a filterable and paged leads inbox, lead detail, and a Lead
+fields settings screen. On lead detail a person copies the suggested first message, edits
+values and sets the status. The inbox and detail take their fields from the organization's
+lead fields: the table opens on the short ones and a Columns menu adds the rest, while long
+text and links stay on the lead. The settings screen lists those fields and adds custom
+ones in a dialog. There is no lead creation, API key management or Google sign-in in the UI
+yet.
 
-![Angular 22](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
-![spartan/ui](https://img.shields.io/badge/spartan%2Fui-brain_%2B_helm-1F1F1F)
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-testing-6E9F18?logo=vitest&logoColor=white)
-![pnpm](https://img.shields.io/badge/pnpm-package_manager-F69220?logo=pnpm&logoColor=white)
-![MIT](https://img.shields.io/badge/license-MIT-green)
+The API contract is in two docs. [docs/fe-phase1-api.md](docs/fe-phase1-api.md) covers
+sessions and API keys, and [docs/fe-lead-fields-api.md](docs/fe-lead-fields-api.md) covers
+leads and lead fields.
 
-Every dependency is MIT. PrimeNG was dropped at v22 because it moved to a paid licence above small-team thresholds.
+Built on Angular 22 (zoneless, signals), spartan/ui, Tailwind CSS v4 and Vitest.
 
-## Use this template
+## Run it locally
 
-1. Click **Use this template**, then **Create a new repository** at the top of this repository.
-2. Clone your repository and start the dev server:
+You need cms-api running on `http://localhost:8000` with `CORS_ALLOWED_ORIGINS` including
+`http://localhost:4200` (its local default).
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd <your-repo-name>
 pnpm install
 pnpm start
 ```
 
-The welcome screen that loads is a smoke test. It renders the theme tokens, both fonts, and a row of spartan buttons, so you can confirm the setup works before writing anything. Delete it once your first feature exists.
+Open `http://localhost:4200`. Signed-out visitors land on the sign in screen, which links
+to `/sign-up` for a new account. The account comes with its own organization and an
+empty inbox.
 
-> [!TIP]
-> **Outdated template?**
-> If this repository has not been updated in a while, feed this prompt into your AI coding assistant:
-> ```text
-> Update all project dependencies to their latest stable versions, including Angular.
-> Check peer ranges first: @angular/build pins the allowed TypeScript and Vitest versions,
-> and @spartan-ng/brain pins the allowed Angular range.
-> ```
+Leads come from `POST /api/v1/leads` with an `x-api-key` header, minted with
+`POST /api/v1/api-keys` from a signed-in session. A lead's `values` must match the
+organization's lead fields, which `GET /api/v1/leads/fields` lists. Scripts that call the
+`/auth` routes must send an `Origin` header, because Better Auth rejects browser-shaped
+requests without one. The contract docs have the full shapes.
 
-## After cloning
-
-1. **`AGENTS.md`**: fill in the `Product overview` section (what the app is, who uses it, what it does for them). Your AI tools read this first.
-2. **`src/styles.css`**: brand tokens. Hex belongs here and nowhere else. Read the warning in [Design tokens](#design-tokens) before renaming any of them.
-3. **`src/environments/`**: `apiBaseUrl` for dev and prod.
-4. **`package.json`**, **`angular.json`**, **`src/index.html`**, **`src/app/layout/header/header.html`**: replace the `angular-boilerplate` name. `angular.json` has the project key plus two `buildTarget` references.
-5. **`LICENSE`**: copyright holder.
-6. Delete `src/app/modules/welcome/` and its route in `src/app/app.routes.ts`, then start building.
+`apiBaseUrl` lives in `src/environments/environment.ts` (dev) and
+`environment.prod.ts` (prod). The prod value is still a placeholder.
 
 ## What's wired up
 
-- `src/app/layout/`: header, sidebar, and `MainLayout`, already routed. `MainLayout` provides the skip link, the `<main>` landmark, and the `page-container` width wrapper, so pages do not repeat them
-- `src/app/app.config.ts`: router with `withComponentInputBinding()` (route params arrive as signal `input()`s) and `withInMemoryScrolling()`, plus `provideHttpClient(withFetch())`
+- `src/app/core/auth/`: session service and route guards. `src/app/core/lead-fields/`: the field definitions service. `src/app/modules/`: `auth` (sign in and sign up in one centered card shell), `leads` (inbox and detail) and `settings` (Lead fields)
+- `src/app/layout/`: header, sidebar, and `MainLayout`, already routed. `MainLayout` provides the skip link, the `<main>` landmark, and the `shell-gutter` padding, so pages do not repeat them. Each page picks `page-wide` or `page-standard` on its host
+- `src/app/app.config.ts`: router with `withComponentInputBinding()` (route params arrive as signal `input()`s) and `withInMemoryScrolling()`, plus `provideHttpClient(withFetch())` with a credentials interceptor (sends the session cookie) and a 401 interceptor (sends a stale session back to sign in)
 - `src/styles.css`: brand tokens, Tailwind v4 `@theme inline` mapping, and the spartan preset. Light scheme only
 - `src/app/shared/ui/`: spartan helm components vendored into the repo, imported through `@ui/<name>`
 - `tsconfig.json`: `@ui/*`, `@core/*`, and `@env/*` path aliases
@@ -72,7 +67,7 @@ pnpm verify   # build + test, the gate before calling work done
 pnpm ng g @spartan-ng/cli:ui
 ```
 
-Pick a component from the prompt. The CLI vendors its source into `src/app/shared/ui/` and registers a `@ui/<name>` path alias. Those files are yours, so restyle them in place rather than overriding them from outside. Config lives in `components.json`.
+Pick a component from the prompt, or name it (`pnpm ng g @spartan-ng/cli:ui textarea`). The CLI vendors its source into `src/app/shared/ui/` and registers a `@ui/<name>` path alias. Those files are yours, so restyle them in place rather than overriding them from outside. Config lives in `components.json`. Restart `pnpm start` afterwards. A dev server started before the new alias existed serves components that import it uncompiled.
 
 `@spartan-ng/brain` stays an npm dependency and supplies the behaviour and accessibility underneath. `@spartan-ng/cli` is a schematics collection with no executable, so it has to stay a devDependency. `pnpm dlx` cannot run it.
 

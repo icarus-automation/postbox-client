@@ -1,0 +1,76 @@
+@if (isEmpty()) {
+  @if (layout() === 'detail') {
+    <span class="text-muted-foreground">Not set</span>
+  }
+} @else {
+  @switch (field().type) {
+    @case ('long_text') {
+      <p [class]="layout() === 'cell' ? 'line-clamp-2' : 'whitespace-pre-line'">{{ value() }}</p>
+    }
+    @case ('number') {
+      @if (number() !== null) {
+        {{ number() | number }}
+      } @else {
+        {{ value() }}
+      }
+    }
+    @case ('select') {
+      @if (isStatus() && text(); as status) {
+        <app-lead-status [status]="status" />
+      } @else {
+        {{ value() }}
+        @if (retired()) {
+          <span class="text-xs text-muted-foreground">(retired)</span>
+        }
+      }
+    }
+    @case ('url') {
+      @if (href(); as href) {
+        @if (layout() === 'cell') {
+          <!-- The site name says where the link goes, which a bare "Open" never did. -->
+          <a
+            [href]="href"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 text-body underline underline-offset-4 hover:text-heading"
+          >
+            <span>{{ linkSite() }}</span>
+            <ng-icon name="lucideExternalLink" aria-hidden="true" class="shrink-0 text-muted-foreground" />
+            <span class="sr-only">&ngsp;{{ field().label }} for {{ leadName() }} (opens in a new tab)</span>
+          </a>
+        } @else {
+          <a
+            [href]="href"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-start gap-1 break-all text-body underline underline-offset-4 hover:text-heading"
+          >
+            <span>{{ href }}</span>
+            <ng-icon name="lucideExternalLink" aria-hidden="true" class="mt-0.5 shrink-0 text-muted-foreground" />
+            <span class="sr-only">Opens in a new tab</span>
+          </a>
+        }
+      } @else {
+        {{ value() }}
+      }
+    }
+    @case ('date') {
+      @if (dateText(); as date) {
+        <!-- The date pipe reads a bare YYYY-MM-DD as local midnight, so the day never shifts. -->
+        {{ date | date: 'MMM d, y' }}
+      } @else {
+        {{ value() }}
+      }
+    }
+    @case ('datetime') {
+      @if (dateText(); as date) {
+        {{ date | date: (layout() === 'cell' ? 'MMM d, HH:mm' : 'MMM d, y, HH:mm') }}
+      } @else {
+        {{ value() }}
+      }
+    }
+    @default {
+      {{ value() }}
+    }
+  }
+}

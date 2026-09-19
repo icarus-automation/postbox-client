@@ -13,12 +13,15 @@ src/app/
   app.ts          # root component, renders <router-outlet /> only
 ```
 
-## This repo is empty on purpose
+## Existing features
 
-`src/app/modules/` contains only `welcome`, a throwaway smoke screen that the first real
-feature should replace. **There are no example features to copy from.** Do not search for
-`crm`, `tickets`, `auth` or similar; they do not exist here. Build from the conventions
-below instead.
+`src/app/modules/` holds `auth` (the centered `auth-shell` card, sign in and sign up),
+`leads` (inbox list, detail, value display, status badge, status picker, and
+a feature-scoped `services/leads.ts`) and `settings` (the Lead fields list and its add
+field form, at `/settings/lead-fields`). The field definitions service is in
+`core/lead-fields/`, because both `leads` and `settings` use it. Copy the shape of `leads`
+when adding a feature: a routes file, one folder per screen, types beside the routes file,
+and services under `services/`.
 
 ## Features (`src/app/modules/<feature>/`)
 
@@ -46,7 +49,10 @@ Example wiring in `app.routes.ts`:
 
 - New pages render inside `MainLayout` (header + sidebar) by default, as children of the root route in `app.routes.ts`.
 - Do NOT strip app chrome for "premium feel" pages unless explicitly asked.
-- `MainLayout` already provides the skip link, the `<main id="main-content">` landmark and the `.page-container` max-width wrapper. Do not re-add those per page.
+- `MainLayout` already provides the skip link, the `<main id="main-content">` landmark and the `shell-gutter` side padding. Do not re-add those per page.
+- Every page inside `MainLayout` picks one of two widths with a host class: `host: { class: 'page-wide' }` for tables that use the whole main column, `page-standard` for a single record. Everything on a standard page shares its left and right edges. Do not add a third width, and do not nest a narrower column under a wider header.
+- Signed-out screens (sign in, sign up) render outside `MainLayout` inside `AuthShell`, the one centered card. It supplies their `<main>` landmark.
+- The sidebar lists only destinations that ship. Do not add placeholder nav items.
 
 ## Routing
 

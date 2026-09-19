@@ -1,12 +1,27 @@
-<aside class="w-56 shrink-0 border-r border-sidebar-border bg-sidebar">
-  <nav aria-label="Main" class="flex flex-col gap-1 p-3">
+<!--
+  Sticks below the 3.5rem header and fills the rest of the column, so Settings can sit at
+  the foot, away from the work, the way it does in the products people already use.
+-->
+<div class="sticky top-14 flex h-[calc(100dvh-3.5rem)] flex-col">
+  <nav aria-label="Main" class="flex flex-1 flex-col gap-1 p-3">
     <a
-      routerLink="/"
-      routerLinkActive="bg-sidebar-accent text-sidebar-accent-foreground"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="rounded-base px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      routerLink="/leads"
+      routerLinkActive="bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+      class="flex items-center gap-2 rounded-base px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     >
-      Welcome
+      <ng-icon name="lucideInbox" aria-hidden="true" />
+      Leads
     </a>
   </nav>
-</aside>
+
+  <nav aria-label="Settings" class="border-t border-sidebar-border p-3">
+    <a
+      routerLink="/settings"
+      routerLinkActive="bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+      class="flex items-center gap-2 rounded-base px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    >
+      <ng-icon name="lucideSettings" aria-hidden="true" />
+      Settings
+    </a>
+  </nav>
+</div>

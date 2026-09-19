@@ -1,0 +1,298 @@
+<div class="grid gap-5">
+  <!-- Keeps the list's tab and page, so the lead you just moved is gone from it. -->
+  <a
+    routerLink="/leads"
+    queryParamsHandling="preserve"
+    class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:text-heading hover:underline"
+  >
+    <ng-icon name="lucideArrowLeft" aria-hidden="true" />
+    Back to leads
+  </a>
+
+  @if (notFound()) {
+    <div class="rounded-base border border-dashed border-border bg-card px-6 py-14 text-center">
+      <h1 class="text-base">Lead not found</h1>
+      <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        It was deleted, or it belongs to another organization.
+      </p>
+    </div>
+  } @else if (errorMessage(); as message) {
+    <div hlmAlert variant="destructive">
+      <p hlmAlertTitle>Could not load this lead</p>
+      <p hlmAlertDescription>{{ message }}</p>
+      <button hlmBtn variant="outline" size="sm" class="mt-3 w-fit" (click)="reload()">
+        Try again
+      </button>
+    </div>
+  } @else if (isLoading()) {
+    <div class="grid gap-3">
+      <span hlmSkeleton class="h-7 w-64"></span>
+      <span hlmSkeleton class="h-4 w-40"></span>
+      <span hlmSkeleton class="mt-4 h-32 w-full"></span>
+    </div>
+  } @else if (value(); as lead) {
+    @if (lead.isArchived) {
+      <!-- Said once, at the top, because everything below it reads the same either way. -->
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-base border border-border bg-muted px-4 py-3">
+        <p class="flex items-center gap-2 text-sm text-body">
+          <ng-icon name="lucideArchive" aria-hidden="true" class="text-muted-foreground" />
+          This lead is archived.
+        </p>
+        <button hlmBtn variant="outline" size="sm" type="button" [disabled]="archiving()" (click)="restore()">
+          <ng-icon name="lucideArchiveRestore" aria-hidden="true" />
+          {{ archiving() ? 'Restoring' : 'Restore' }}
+        </button>
+      </div>
+    }
+
+    <header class="grid gap-4">
+      <!-- Who the lead is and where it stands, then what to do about it. -->
+      <div class="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
+        <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 class="min-w-0 text-xl break-words">{{ title() }}</h1>
+
+          @if (status(); as status) {
+            <!-- Where the lead stands, read at a glance. The control that moves it is in the
+                 details rail, with the rest of the fields the record holds. -->
+            <app-lead-status [status]="status" />
+          }
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          @if (primaryLink(); as link) {
+            <!-- The one thing to do from this page, so it is the loud one. -->
+            <a hlmBtn [href]="link.href" target="_blank" rel="noopener noreferrer">
+              <ng-icon name="lucideExternalLink" aria-hidden="true" />
+              {{ link.label }}
+              <span class="sr-only">({{ link.site }}, opens in a new tab)</span>
+            </a>
+          }
+
+          @if (!editing() && editRows().length > 0) {
+            <button #editButton hlmBtn variant="ghost" type="button" (click)="startEdit()">
+              <ng-icon name="lucidePencil" aria-hidden="true" />
+              Edit
+            </button>
+          }
+
+          @if (!lead.isArchived) {
+            <!-- Archiving takes a lead off the board, so it asks first and wears the warning color. -->
+            <hlm-dialog #archiveDialog>
+              <button
+                hlmDialogTrigger
+                hlmBtn
+                variant="ghost"
+                type="button"
+                [disabled]="archiving()"
+                class="text-destructive-ink hover:bg-muted-destructive hover:text-destructive-ink"
+              >
+                <ng-icon name="lucideArchive" aria-hidden="true" />
+                Archive
+              </button>
+
+              <hlm-dialog-content *hlmDialogPortal class="sm:max-w-md">
+                <div hlmDialogHeader>
+                  <h2 hlmDialogTitle>Archive this lead?</h2>
+                  <p hlmDialogDescription>
+                    {{ title() }} moves to Archived. You can restore it later with the same status.
+                  </p>
+                </div>
+
+                <div hlmDialogFooter>
+                  <button hlmBtn variant="outline" type="button" (click)="archiveDialog.close()">
+                    Cancel
+                  </button>
+                  <button
+                    hlmBtn
+                    variant="destructive"
+                    type="button"
+                    (click)="archiveDialog.close(); archive()"
+                  >
+                    <ng-icon name="lucideArchive" aria-hidden="true" />
+                    Archive lead
+                  </button>
+                </div>
+              </hlm-dialog-content>
+            </hlm-dialog>
+          }
+        </div>
+      </div>
+
+      @if (saveError(); as message) {
+        <div hlmAlert variant="destructive">
+          <p hlmAlertTitle>Status not saved</p>
+          <p hlmAlertDescription>{{ message }}</p>
+        </div>
+      }
+
+      @if (archiveError(); as message) {
+        <div hlmAlert variant="destructive">
+          <p hlmAlertTitle>{{ archiveErrorTitle() }}</p>
+          <p hlmAlertDescription>{{ message }}</p>
+        </div>
+      }
+    </header>
+
+    @if (editing() && form(); as form) {
+      <form
+        #editForm
+        hlmCard
+        size="sm"
+        [formGroup]="form"
+        (ngSubmit)="saveEdit()"
+        novalidate
+        aria-labelledby="lead-edit-heading"
+      >
+        <div hlmCardHeader>
+          <h2 hlmCardTitle id="lead-edit-heading">Edit details</h2>
+        </div>
+
+        <div hlmCardContent class="grid gap-4">
+          @if (editError(); as message) {
+            <div hlmAlert variant="destructive">
+              <p hlmAlertTitle>Changes not saved</p>
+              <p hlmAlertDescription>{{ message }}</p>
+            </div>
+          }
+
+          <!-- Each field ties its label, control, note and error together, so `for` and
+               `aria-describedby` come from the markup rather than hand-written ids. -->
+          @for (row of editRows(); track row.field.id) {
+            <div hlmField class="gap-1.5">
+              <label hlmFieldLabel>
+                {{ row.field.label }}
+                @if (row.field.isRequired) {
+                  <span class="font-normal text-muted-foreground">(required)</span>
+                }
+              </label>
+
+              @switch (row.field.type) {
+                @case ('long_text') {
+                  <textarea
+                    hlmTextarea
+                    rows="3"
+                    [id]="row.inputId"
+                    [formControlName]="row.field.key"
+                  ></textarea>
+                }
+                @case ('number') {
+                  <input
+                    hlmInput
+                    type="number"
+                    step="any"
+                    [id]="row.inputId"
+                    [formControlName]="row.field.key"
+                  />
+                }
+                @case ('url') {
+                  <input hlmInput type="url" [id]="row.inputId" [formControlName]="row.field.key" />
+                }
+                @case ('date') {
+                  <input hlmInput type="date" [id]="row.inputId" [formControlName]="row.field.key" />
+                }
+                @case ('select') {
+                  <hlm-select
+                    class="w-full"
+                    [formControlName]="row.field.key"
+                    [itemToString]="row.optionLabel"
+                  >
+                    <hlm-select-trigger class="w-full" [buttonId]="row.inputId">
+                      <hlm-select-value placeholder="Not set" />
+                    </hlm-select-trigger>
+
+                    <hlm-select-content *hlmSelectPortal>
+                      @if (row.clearable) {
+                        <hlm-select-item value="">Not set</hlm-select-item>
+                      }
+                      @if (row.retired; as retired) {
+                        <!-- Shown so the control matches the lead, but nobody can pick it again. -->
+                        <hlm-select-item [value]="retired" disabled>{{ retired }} (retired)</hlm-select-item>
+                      }
+                      @for (option of row.field.options; track option) {
+                        <hlm-select-item [value]="option">{{ option }}</hlm-select-item>
+                      }
+                    </hlm-select-content>
+                  </hlm-select>
+                  @if (row.retired; as retired) {
+                    <p hlmFieldDescription [id]="row.noteId" class="text-xs">
+                      {{ retired }} is no longer an option. Choose another to replace it.
+                    </p>
+                  }
+                }
+                @default {
+                  <input hlmInput type="text" [id]="row.inputId" [formControlName]="row.field.key" />
+                }
+              }
+
+              <hlm-field-error [id]="row.errorId">{{ fieldError(row.field) }}</hlm-field-error>
+            </div>
+          }
+        </div>
+
+        <div hlmCardFooter class="flex-wrap gap-2">
+          <button hlmBtn type="submit" [disabled]="editSaving()">
+            @if (editSaving()) {
+              <hlm-spinner aria-label="Saving changes" />
+            }
+            {{ editSaving() ? 'Saving' : 'Save changes' }}
+          </button>
+          <button hlmBtn variant="outline" type="button" [disabled]="editSaving()" (click)="cancelEdit()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    } @else {
+      <!-- No boxes and no hairlines. A passage is told apart by its label and the space
+           around it, and the facts are a column of the same labels over their values. -->
+      <div class="grid items-start gap-6 lg:grid-cols-3 lg:gap-8">
+        <div class="grid gap-7 lg:col-span-2">
+          @for (section of sections(); track section.field.id) {
+            <section [attr.aria-labelledby]="section.headingId">
+              <h2 [id]="section.headingId" class="field-label">{{ section.field.label }}</h2>
+              <p class="mt-2 whitespace-pre-line text-body">{{ section.text }}</p>
+            </section>
+          }
+        </div>
+
+        <aside aria-labelledby="lead-details-heading" class="grid gap-4 lg:border-s lg:border-border lg:ps-6">
+          <h2 id="lead-details-heading" class="sr-only">Details</h2>
+
+          @if (statusField(); as field) {
+            @if (status(); as status) {
+              <!-- The one field on this page a person edits in place. The inbox filters many
+                   leads with tabs, so this must not borrow that chrome for one lead. -->
+              <app-lead-status-picker
+                [status]="status"
+                [options]="field.options"
+                [label]="field.label"
+                (statusChange)="changeStatus($event)"
+              />
+            }
+          }
+
+          <dl class="grid gap-3 text-sm">
+            @for (detail of details(); track detail.field.id) {
+              <div>
+                <dt class="field-label">{{ detail.field.label }}</dt>
+                <dd class="mt-1 text-body">
+                  <app-lead-field-value [field]="detail.field" [value]="detail.value" />
+                </dd>
+              </div>
+            }
+          </dl>
+
+          @if (emptyNote(); as note) {
+            <p class="text-xs text-muted-foreground">{{ note }}</p>
+          }
+        </aside>
+      </div>
+
+      <!-- The housekeeping. One quiet line rather than a card competing with the record. -->
+      <p class="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border pt-4 text-xs text-muted-foreground">
+        <span>Updated {{ lead.updatedAt | date: 'MMM d, y, HH:mm' }}</span>
+        <span aria-hidden="true">·</span>
+        <span class="font-mono break-all">{{ lead.id }}</span>
+      </p>
+    }
+  }
+</div>

@@ -1,0 +1,20 @@
+<!-- A label over a control, the way every other value in the rail is labelled. It is an
+     edit to this lead, so it must not read as the inbox tabs that filter many of them. -->
+<label [for]="triggerId" class="field-label">{{ label() }}</label>
+
+<hlm-select
+  class="w-36"
+  [value]="status()"
+  [itemToString]="statusLabel"
+  (valueChange)="pick($event)"
+>
+  <hlm-select-trigger class="w-full" [buttonId]="triggerId">
+    <hlm-select-value />
+  </hlm-select-trigger>
+
+  <hlm-select-content *hlmSelectPortal>
+    @for (stage of stages(); track stage.value) {
+      <hlm-select-item [value]="stage.value">{{ stage.label }}</hlm-select-item>
+    }
+  </hlm-select-content>
+</hlm-select>
