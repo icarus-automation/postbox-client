@@ -1,0 +1,54 @@
+@if (media(); as image) {
+  <figure class="grid gap-2">
+    <img [src]="image.url" [alt]="image.alt" class="max-h-64 w-full rounded-md object-contain" />
+    <figcaption class="text-sm text-muted-foreground">{{ image.alt }}</figcaption>
+  </figure>
+}
+
+<div class="grid gap-1.5">
+  <label hlmLabel [for]="altId">Description</label>
+  <input
+    hlmInput
+    [id]="altId"
+    type="text"
+    autocomplete="off"
+    [value]="alt()"
+    [disabled]="uploading()"
+    (input)="altInput($event)"
+  />
+  <p class="text-xs text-muted-foreground">Required. Read aloud, and shown if the image does not load.</p>
+</div>
+
+@if (error(); as message) {
+  <div hlmAlert variant="destructive">
+    <p hlmAlertDescription>{{ message }}</p>
+  </div>
+}
+
+<div class="flex flex-wrap items-center gap-2">
+  <input
+    #file
+    class="sr-only"
+    tabindex="-1"
+    aria-hidden="true"
+    [id]="fileId"
+    type="file"
+    accept="image/jpeg,image/png,image/webp,image/gif"
+    [disabled]="uploading()"
+    (change)="onFile($event)"
+  />
+  <button hlmBtn type="button" variant="outline" size="sm" [disabled]="uploading()" (click)="file.click()">
+    @if (uploading()) {
+      <hlm-spinner aria-label="Uploading image" />
+      Uploading
+    } @else {
+      <ng-icon name="lucideImagePlus" aria-hidden="true" />
+      {{ media() ? 'Replace image' : 'Choose image' }}
+    }
+  </button>
+  @if (media()) {
+    <button hlmBtn type="button" variant="ghost" size="sm" [disabled]="uploading()" (click)="remove()">
+      Remove image
+    </button>
+  }
+</div>

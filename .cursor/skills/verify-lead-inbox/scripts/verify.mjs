@@ -81,10 +81,10 @@ Usage: node .cursor/skills/verify-lead-inbox/scripts/verify.mjs <command>
                   Lead Inbox already listening there. Never bind another port.
   doctor          Read-only check: app identity, cms-api health, CORS, and
                   whether this run owns the client process.
-  account-create  POST /auth/sign-up/email for a unique org. Writes
+  account-create  Rejects email sign-up, writes a password user with no
+                  organization, then creates that workspace. Writes
                   .run/account.json. Use this for inbox and detail proofs.
-                  Do not use it for the account feature, which signs up in
-                  the browser.
+                  Do not use it for the account feature.
   seed-lead       Sign in with .run/account.json, mint an API key, POST one
                   lead. Writes .run/lead.json. Machines create leads this
                   way. The UI has no create-lead screen.
@@ -187,18 +187,17 @@ async function doctor() {
 async function accountCreate() {
   await assertApi();
 
-  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
   const account = {
     name: 'Verify Owner',
     email: `verify.${stamp}@lead-inbox.test`,
     password: `verify-${stamp}`,
     createdAt: new Date().toISOString(),
   };
+  const slug = `verify-${stamp}`;
 
-  const jar = new Map();
   const signUp = await apiFetch('/auth/sign-up/email', {
     method: 'POST',
-    jar,
     origin: true,
     body: {
       name: account.name,
@@ -206,19 +205,63 @@ async function accountCreate() {
       password: account.password,
     },
   });
-
-  if (!signUp.ok) {
-    fail(`sign-up failed (${signUp.status}): ${signUp.text}`);
+  if (signUp.json?.code !== 'EMAIL_PASSWORD_SIGN_UP_DISABLED') {
+    fail(`email sign-up must be disabled, got ${signUp.status}: ${signUp.text}`);
   }
 
-  const session = await getSession(jar);
-  if (!session.signedIn) {
-    fail('sign-up returned, but get-session has no user.');
+  const apiRoot = path.resolve(repoRoot, '../cms-api');
+  const provision = path.join(
+    apiRoot,
+    '.cursor/skills/verify-cms-api/scripts/provision-owner.mjs',
+  );
+  execFileSync(
+    process.execPath,
+    [
+      provision,
+      '--database',
+      'dev',
+      '--name',
+      account.name,
+      '--email',
+      account.email,
+      '--password',
+      account.password,
+    ],
+    { cwd: apiRoot, stdio: 'inherit' },
+  );
+
+  const jar = new Map();
+  const signIn = await apiFetch('/auth/sign-in/email', {
+    method: 'POST',
+    jar,
+    origin: true,
+    body: { email: account.email, password: account.password },
+  });
+  if (!signIn.ok) {
+    fail(`sign-in failed (${signIn.status}): ${signIn.text}`);
+  }
+
+  const before = await apiFetch('/workspaces/admission', { method: 'GET', jar, origin: true });
+  if (before.json?.phase !== 'onboarding') {
+    fail(`new user must have no organization, got ${before.text}`);
+  }
+
+  const found = await apiFetch('/workspaces', {
+    method: 'POST',
+    jar,
+    origin: true,
+    body: { name: account.name, slug, website: null, logoHoldKey: null },
+  });
+  if (!found.ok) {
+    fail(`workspace create failed (${found.status}): ${found.text}`);
+  }
+  if (found.json?.role !== 'owner' || found.json?.slug !== slug) {
+    fail(`workspace create did not make this user the owner of ${slug}: ${found.text}`);
   }
 
   mkdirSync(runDir, { recursive: true });
   writeFileSync(accountPath, `${JSON.stringify(account, null, 2)}\n`);
-  ok(`email=${account.email} file=${rel(accountPath)}`);
+  ok(`email=${account.email} slug=${slug} file=${rel(accountPath)}`);
 }
 
 async function seedLead() {

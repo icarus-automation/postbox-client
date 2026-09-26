@@ -1,16 +1,15 @@
 # Account
 
-Account lets a person create an organization by signing up, return later by signing in, leave through sign out, and recover a deep link after login. Google sign-in is visible and disabled.
+Sign-up is Google only. Sign-in keeps email and password beside Continue with Google. A signed-in user with no organization lands on Create your organization and cannot open the app until that workspace exists. The shell then shows the organization name and logo.
 
 ## Sub-features
 
-- `signup-open` opens the create-account card from `/sign-up` and from the sign-in footer.
-- `signup-save` creates the account and lands on an empty inbox.
+- `signup-open` opens `/sign-up` with only Continue with Google.
 - `signin-open` opens the sign-in card from `/login` and from the sign-up footer.
-- `signin-save` signs in and opens `/leads`, or the `returnUrl` when it is a same-origin path.
+- `signin-save` signs in and opens `/leads`, or `/create-organization` when the user has no organization, or the `returnUrl` when it is a same-origin path and the user already has an organization.
 - `signin-reject` keeps the person on the card and shows `Sign in failed` for bad credentials.
 - `signout` asks `Sign out?` and then returns to sign in.
-- `google-soon` keeps `Continue with Google` disabled.
+- `google-button` shows an enabled `Continue with Google` on both cards.
 
 ## How to get to it (user POV)
 
@@ -18,7 +17,7 @@ Account lets a person create an organization by signing up, return later by sign
 - Open `http://localhost:4200/sign-up` while signed out.
 - Choose `Create one` on the sign-in card.
 - Choose `Sign in` on the create-account card.
-- Open a signed-in URL such as `/leads` or `/settings/lead-fields` while signed out, then sign in.
+- Open a signed-in URL such as `/leads` while signed out, then sign in.
 - Choose `Sign out` in the header, then confirm in the dialog.
 
 ## Driving it with the Cursor browser
@@ -26,30 +25,27 @@ Account lets a person create an organization by signing up, return later by sign
 Preconditions:
 
 - Doctor is clean at `http://localhost:4200`.
-- cms-api accepts sign-up.
-- The Cursor browser is signed out. If `/login` redirects to `/leads`, sign out first.
-- The email you will type is unused.
+- cms-api is running and email sign-up is disabled.
+- The Cursor browser is signed out. If `/login` redirects to `/leads` or `/create-organization`, sign out first.
+- A verification email and password already exist from `account-create` when the step says to sign in. Do not type the everyday account.
 
-- **Open sign in.** Go to `/login`. Run `browser_navigate` with `url` `http://localhost:4200/login`. The heading is `Sign in to Lead Inbox`. The button `Continue with Google (coming soon)` is present and disabled.
-- **Footer to sign up.** Choose `Create one`. Run `browser_click` on the link named `Create one`. The heading becomes `Create account`. The description is `Your account includes an organization and an empty leads list.`
+- **Open sign in.** Go to `/login`. Run `browser_navigate` with `url` `http://localhost:4200/login`. The heading is `Sign in to Lead Inbox`. `Continue with Google` is present. Email and Password fields are present.
+- **Footer to sign up.** Choose `Create one`. Run `browser_click` on the link named `Create one`. The heading becomes `Create account`. There is no email field and no password field.
 - **Footer back to sign in.** Choose `Sign in`. Run `browser_click` on the link named `Sign in`. The heading is `Sign in to Lead Inbox` again.
-- **Google stays off.** On either card, the button `Continue with Google (coming soon)` does not submit and stays disabled.
-- **Open sign up.** Go to `/sign-up`. Run `browser_navigate` with `url` `http://localhost:4200/sign-up`.
-- **Create account.** Fill name, a unique email, and a password of at least 8 characters. Run `browser_fill` on `Name` with `Verify Owner`, on `Email` with a unique `verify.<stamp>@lead-inbox.test`, and on `Password` with a value of 8 or more characters. Choose `Create account`. Run `browser_click` on the button named `Create account`. The button reads `Creating account` while the request is in flight. Wait until the heading is `Leads (0)` and the empty copy is `No leads yet`. The header screenshot shows that email.
-- **Sign out.** Choose `Sign out`, then confirm. Run `browser_click` on the header button named `Sign out`, snapshot, then `browser_click` on the dialog button named `Sign out` under the heading `Sign out?`. The heading is `Sign in to Lead Inbox`.
+- **Open sign up.** Go to `/sign-up`. Run `browser_navigate` with `url` `http://localhost:4200/sign-up`. The only button is `Continue with Google`.
 - **Bad password.** On `/login`, fill the verification email and `wrong-password`. Run `browser_fill` then `browser_click` on `Sign in`. An alert titled `Sign in failed` stays on the card. The heading does not become `Leads`.
-- **Sign in.** Fill the verification email and password. Run `browser_fill` then `browser_click` on `Sign in`. The heading is `Leads`.
+- **Sign in.** Fill the verification email and password from `account-create`. Run `browser_fill` then `browser_click` on `Sign in`. The heading is `Leads`. The header brand is the organization name.
 - **Return URL.** Sign out. Open `http://localhost:4200/settings/lead-fields`. Sign in. Run `browser_navigate` to that path, then sign in. The heading is `Lead fields`, not `Leads`.
-- **Proof.** After a successful sign-up, capture the empty inbox. Write `browser_snapshot` to `evidence/account/inbox-after-signup.aria.txt`. Take `inbox-after-signup.png` and copy it into `evidence/account/`. The ARIA file shows `Leads (0)` and `No leads yet`. The screenshot shows the verification email in the header.
+- **Proof.** After a successful sign-in, capture the empty inbox. Write `browser_snapshot` to `evidence/account/inbox-after-signin.aria.txt`. Take `inbox-after-signin.png` and copy it into `evidence/account/`. The ARIA file shows `Leads (0)` and `No leads yet`. The screenshot shows the organization name in the header.
 
 ## Gotchas
 
+- Continue with Google leaves the app for Google. This recipe does not finish that round trip. A real OAuth client is required, and the local callback is `http://localhost:8000/api/v1/auth/callback/google`.
 - After navigate, wait for the `h1`. The first snapshot can be an empty document titled `Lead Inbox`.
-- A session on `/login` or `/sign-up` redirects to `/leads` with no form. Sign out before proving those cards.
+- A session on `/login` or `/sign-up` redirects. An admitted user goes to `/leads`. A user with no organization goes to `/create-organization`. Sign out before proving those cards.
 - Two controls read `Sign out`. The header opens the dialog. The dialog footer confirms. Snapshot after the first click.
-- `returnUrl` is ignored unless it starts with `/` and not `//`. An external URL must land on `/leads`.
-- Sign-up names the organization `{Name}'s organization`. There is no Organization screen yet. Do not look for a picker.
+- `returnUrl` is ignored unless it starts with `/` and not `//`. An external URL must land on `/leads`. A user with no organization still goes to `/create-organization` instead of the return URL.
 - Field errors stay `hidden` until the control is invalid and touched. Submit once to show `Enter your email.` and friends. A spec that only checks whether the error node exists will pass while the message is still hidden.
-- Do not run `account-create` for this feature. That helper skips the form this recipe exists to prove.
+- Do not run `account-create` during the sign-up card proof. That helper does not use the form. Use it beforehand when a later step needs an email and password.
 - The header email has no ARIA name. The snapshot will not list it. Use the screenshot.
-- Wait for `Creating account` to become a `Leads (0)` heading. A snapshot taken during the request is still the sign-up card.
+- The workspace slug cannot be changed after create. Organization settings shows it as text.

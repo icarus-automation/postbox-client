@@ -1,32 +1,38 @@
-/** The signed-in person, as `GET /auth/get-session` reports them. */
-export interface AuthUser {
+export type PasswordSlot = 'open' | 'sealed';
+
+export type MemberRole = 'owner' | 'admin' | 'member';
+
+export type AdmissionUser = {
   id: string;
   name: string;
   email: string;
-  emailVerified: boolean;
-  image: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+};
 
-/**
- * The session record behind the cookie. Every org-scoped route reads the
- * organization from `activeOrganizationId`, never from the URL.
- */
-export interface AuthSession {
+export type WorkspaceView = {
   id: string;
-  token: string;
-  userId: string;
-  activeOrganizationId: string | null;
-  expiresAt: string;
-  createdAt: string;
-  updatedAt: string;
-  ipAddress: string;
-  userAgent: string;
-}
+  name: string;
+  slug: string;
+  website: string | null;
+  logoUrl: string | null;
+  role: MemberRole;
+};
 
-/** `GET /auth/get-session` returns this, or a literal `null` when signed out. */
-export interface SessionResponse {
-  session: AuthSession;
-  user: AuthUser;
+export type Admission =
+  | { phase: 'signed-out' }
+  | {
+      phase: 'onboarding';
+      user: AdmissionUser;
+      password: PasswordSlot;
+      workspaceUrlPrefix: string;
+    }
+  | {
+      phase: 'admitted';
+      user: AdmissionUser;
+      password: PasswordSlot;
+      workspaceUrlPrefix: string;
+      workspace: WorkspaceView;
+    };
+
+export function editorRole(role: MemberRole): 'owner' | 'admin' | null {
+  return role === 'owner' || role === 'admin' ? role : null;
 }

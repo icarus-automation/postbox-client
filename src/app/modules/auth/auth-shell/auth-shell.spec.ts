@@ -40,16 +40,6 @@ describe('AuthShell', () => {
     expect(card.textContent).toContain('Enter your email and password.');
   });
 
-  it('shows Google as coming soon and never as a live button', () => {
-    const google = [...el.querySelectorAll('button')].find((b) =>
-      b.textContent?.includes('Continue with Google'),
-    )!;
-
-    expect(google.disabled).toBe(true);
-    expect(google.textContent).toContain('Soon');
-    expect(google.querySelector('.sr-only')?.textContent).toContain('coming soon');
-  });
-
   it('projects the form into the card and the footer below it', () => {
     const card = el.querySelector('[data-slot="card"]')!;
 

@@ -1,0 +1,128 @@
+<main id="main-content" class="flex min-h-dvh items-center justify-center px-4 py-12">
+  @if (admission(); as admission) {
+    @if (admission.phase === 'onboarding') {
+      <div class="w-full max-w-md rounded-lg border border-border bg-card px-8 py-10 shadow-sm">
+        <p class="text-center text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+          <span aria-hidden="true">•</span>
+          Welcome, {{ admission.user.name }}
+        </p>
+        <h1 class="mt-3 text-center font-heading text-3xl font-semibold text-heading">
+          Let's create your organization.
+        </h1>
+        <p class="mt-2 text-center text-sm text-muted-foreground">
+          One last step. Set up your workspace before heading to the dashboard.
+        </p>
+
+        <form class="mt-8 grid gap-5" (submit)="$event.preventDefault(); create()">
+          @if (error(); as message) {
+            <div hlmAlert variant="destructive">
+              <p hlmAlertTitle>Workspace not created</p>
+              <p hlmAlertDescription>{{ message }}</p>
+            </div>
+          }
+
+          <div hlmField class="gap-1.5">
+            <label hlmFieldLabel for="organization-name">Organization name</label>
+            <input
+              hlmInput
+              id="organization-name"
+              type="text"
+              autocomplete="organization"
+              [value]="name()"
+              (input)="onName($any($event.target).value)"
+            />
+          </div>
+
+          <div hlmField class="gap-1.5">
+            <label hlmFieldLabel for="workspace-slug">Workspace URL</label>
+            <div class="flex overflow-hidden rounded-md border border-input bg-background">
+              <span class="flex items-center border-r border-input bg-muted px-3 text-sm text-muted-foreground">
+                {{ admission.workspaceUrlPrefix }}
+              </span>
+              <input
+                hlmInput
+                id="workspace-slug"
+                class="rounded-none border-0 shadow-none"
+                type="text"
+                autocomplete="off"
+                [value]="slug()"
+                (input)="onSlug($any($event.target).value)"
+              />
+            </div>
+            <p class="text-xs text-muted-foreground">
+              Auto-generated from your organization name. You can edit it.
+            </p>
+            @if (preview()?.outcome === 'taken') {
+              <hlm-field-error>That workspace URL is taken.</hlm-field-error>
+            }
+            @if (preview()?.outcome === 'invalid' && slug()) {
+              <hlm-field-error>Use letters, numbers, and hyphens.</hlm-field-error>
+            }
+          </div>
+
+          <div hlmField class="gap-1.5">
+            <div class="flex items-baseline justify-between">
+              <label hlmFieldLabel for="company-website">Company website</label>
+              <span class="text-xs text-muted-foreground">Optional</span>
+            </div>
+            <input
+              hlmInput
+              id="company-website"
+              type="url"
+              inputmode="url"
+              placeholder="https://"
+              [value]="website()"
+              (input)="onWebsite($any($event.target).value)"
+            />
+          </div>
+
+          <div class="grid gap-1.5">
+            <div class="flex items-baseline justify-between">
+              <span class="text-sm font-medium">Organization logo</span>
+              <span class="text-xs text-muted-foreground">Optional</span>
+            </div>
+            <label
+              class="flex cursor-pointer flex-col items-center gap-1 rounded-md border border-dashed border-input px-4 py-8 text-center"
+              (dragover)="$event.preventDefault()"
+              (drop)="onDrop($event)"
+            >
+              <ng-icon name="lucideImage" class="text-muted-foreground" aria-hidden="true" />
+              <span class="text-sm font-medium">Upload your company logo</span>
+              <span class="text-sm text-muted-foreground">
+                Drag & drop or <span class="underline">browse</span>
+              </span>
+              <span class="text-xs text-muted-foreground">PNG, JPG, WebP, GIF up to 5MB</span>
+              @if (logoName(); as fileName) {
+                <span class="mt-2 text-sm">{{ fileName }}</span>
+              }
+              <input
+                class="sr-only"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                (change)="onFile($any($event.target).files?.item(0) ?? null)"
+              />
+            </label>
+          </div>
+
+          <button hlmBtn type="submit" class="mt-1 w-full" [disabled]="!canCreate()">
+            @if (submitting()) {
+              <hlm-spinner aria-label="Creating workspace" />
+            }
+            Create workspace →
+          </button>
+        </form>
+
+        <p class="mt-6 text-center text-sm text-muted-foreground">
+          Already have a workspace?
+          <button
+            type="button"
+            class="font-medium text-primary underline underline-offset-4"
+            (click)="useAnotherAccount()"
+          >
+            Sign in
+          </button>
+        </p>
+      </div>
+    }
+  }
+</main>

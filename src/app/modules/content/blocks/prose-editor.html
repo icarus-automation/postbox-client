@@ -1,0 +1,100 @@
+<div class="overflow-hidden rounded-md border border-border bg-background">
+  <div class="flex flex-wrap items-center gap-0.5 border-b border-border p-1" role="toolbar" [attr.aria-label]="label()">
+    <button
+      hlmBtn
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label="Bold"
+      [attr.aria-pressed]="marks().bold"
+      [disabled]="!ready()"
+      (click)="run('bold')"
+    >
+      <ng-icon name="lucideBold" aria-hidden="true" />
+    </button>
+    <button
+      hlmBtn
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label="Italic"
+      [attr.aria-pressed]="marks().italic"
+      [disabled]="!ready()"
+      (click)="run('italic')"
+    >
+      <ng-icon name="lucideItalic" aria-hidden="true" />
+    </button>
+    <button
+      hlmBtn
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label="Bulleted list"
+      [attr.aria-pressed]="marks().bullet"
+      [disabled]="!ready()"
+      (click)="run('bullet')"
+    >
+      <ng-icon name="lucideList" aria-hidden="true" />
+    </button>
+    <button
+      hlmBtn
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label="Numbered list"
+      [attr.aria-pressed]="marks().ordered"
+      [disabled]="!ready()"
+      (click)="run('ordered')"
+    >
+      <ng-icon name="lucideListOrdered" aria-hidden="true" />
+    </button>
+    <button
+      hlmBtn
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label="Quote"
+      [attr.aria-pressed]="marks().quote"
+      [disabled]="!ready()"
+      (click)="run('quote')"
+    >
+      <ng-icon name="lucideQuote" aria-hidden="true" />
+    </button>
+
+    <hlm-popover>
+      <button
+        hlmPopoverTrigger
+        hlmBtn
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Link"
+        [attr.aria-pressed]="marks().link"
+        [disabled]="!ready()"
+        (click)="rememberLink()"
+      >
+        <ng-icon name="lucideLink" aria-hidden="true" />
+      </button>
+      <hlm-popover-content *hlmPopoverPortal class="grid w-72 gap-2">
+        <label class="text-xs font-medium text-muted-foreground" [for]="linkId">Web address</label>
+        <input
+          hlmInput
+          [id]="linkId"
+          type="url"
+          placeholder="https://example.com"
+          [value]="linkHref()"
+          (input)="linkInput($event)"
+        />
+        @if (linkError(); as message) {
+          <p class="text-xs text-destructive-ink" role="alert">{{ message }}</p>
+        }
+        <div class="flex justify-end gap-2">
+          <button hlmBtn type="button" variant="ghost" size="sm" (click)="removeLink()">Remove</button>
+          <button hlmBtn type="button" size="sm" (click)="applyLink()">Apply</button>
+        </div>
+      </hlm-popover-content>
+    </hlm-popover>
+  </div>
+
+  <div #surface></div>
+</div>

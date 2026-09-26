@@ -1,0 +1,97 @@
+<div class="grid gap-8">
+  <header class="grid gap-3">
+    <a
+      routerLink="/settings"
+      class="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+    >
+      <ng-icon name="lucideArrowLeft" aria-hidden="true" />
+      Settings
+    </a>
+    <h1 class="text-xl">Organization</h1>
+  </header>
+
+  @if (admission(); as admission) {
+    @if (admission.phase === 'admitted') {
+      @if (error(); as message) {
+        <div hlmAlert variant="destructive">
+          <p hlmAlertTitle>Changes not saved</p>
+          <p hlmAlertDescription>{{ message }}</p>
+        </div>
+      }
+
+      <form class="grid max-w-lg gap-5" (submit)="$event.preventDefault(); save()">
+        <div hlmField class="gap-1.5">
+          <label hlmFieldLabel for="organization-name">Organization name</label>
+          <input
+            hlmInput
+            id="organization-name"
+            type="text"
+            [value]="name()"
+            [disabled]="!editorRole(admission.workspace.role)"
+            (input)="name.set($any($event.target).value)"
+          />
+        </div>
+
+        <div hlmField class="gap-1.5">
+          <span hlmFieldLabel>Workspace URL</span>
+          <p class="text-sm">{{ admission.workspaceUrlPrefix }}{{ admission.workspace.slug }}</p>
+        </div>
+
+        <div hlmField class="gap-1.5">
+          <div class="flex items-baseline justify-between">
+            <label hlmFieldLabel for="company-website">Company website</label>
+            <span class="text-xs text-muted-foreground">Optional</span>
+          </div>
+          <input
+            hlmInput
+            id="company-website"
+            type="url"
+            [value]="website()"
+            [disabled]="!editorRole(admission.workspace.role)"
+            (input)="website.set($any($event.target).value)"
+          />
+        </div>
+
+        <div class="grid gap-1.5">
+          <div class="flex items-baseline justify-between">
+            <span class="text-sm font-medium">Organization logo</span>
+            <span class="text-xs text-muted-foreground">Optional</span>
+          </div>
+          @if (admission.workspace.logoUrl; as logo) {
+            @if (!clearLogo() && !logoFile()) {
+              <img [src]="logo" alt="" class="size-12 rounded-base object-cover" />
+            }
+          }
+          @if (editorRole(admission.workspace.role)) {
+            <label class="flex cursor-pointer flex-col items-center gap-1 rounded-md border border-dashed border-input px-4 py-6 text-center">
+              <ng-icon name="lucideImage" class="text-muted-foreground" aria-hidden="true" />
+              <span class="text-sm">Upload your company logo</span>
+              <span class="text-xs text-muted-foreground">PNG, JPG, WebP, GIF up to 5MB</span>
+              <input
+                class="sr-only"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                (change)="onFile($any($event.target).files?.item(0) ?? null)"
+              />
+            </label>
+            @if (admission.workspace.logoUrl || logoFile()) {
+              <button hlmBtn variant="outline" type="button" (click)="removeLogo()">Remove logo</button>
+            }
+          }
+        </div>
+
+        @if (editorRole(admission.workspace.role)) {
+          <button hlmBtn type="submit" [disabled]="saving() || name().trim().length === 0">
+            Save
+          </button>
+        } @else {
+          <p class="text-sm text-muted-foreground">An owner or admin can change these.</p>
+        }
+      </form>
+
+      @if (admission.password === 'open') {
+        <app-set-password-form />
+      }
+    }
+  }
+</div>

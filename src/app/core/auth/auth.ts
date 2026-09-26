@@ -1,39 +1,46 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { environment } from '@env/environment';
 import { firstValueFrom } from 'rxjs';
-import type { SessionResponse } from './auth.types';
+import type { Admission } from './auth.types';
+
+const SIGNED_OUT: Admission = { phase: 'signed-out' };
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/auth`;
 
-  private readonly _session = signal<SessionResponse | null>(null);
+  private readonly _admission = signal<Admission>(SIGNED_OUT);
 
   /** True once we have actually asked the API, so guards stop re-asking. */
   private resolved = false;
 
   /** The in-flight read, shared so parallel guard runs make one request. */
-  private inFlight: Promise<SessionResponse | null> | null = null;
+  private inFlight: Promise<Admission> | null = null;
 
-  readonly session = this._session.asReadonly();
-  readonly user = computed(() => this._session()?.user ?? null);
-  readonly isSignedIn = computed(() => this._session() !== null);
+  readonly admission = this._admission.asReadonly();
+  readonly user = computed(() => {
+    const admission = this._admission();
+    return admission.phase === 'signed-out' ? null : admission.user;
+  });
+  readonly workspace = computed(() => {
+    const admission = this._admission();
+    return admission.phase === 'admitted' ? admission.workspace : null;
+  });
+  readonly isSignedIn = computed(() => this._admission().phase !== 'signed-out');
 
   /**
-   * Reads the session cookie once per app load. Guards await this before they
-   * decide, so a hard refresh on a deep link resolves instead of bouncing to login.
+   * Reads admission once per app load. Guards await this before they decide,
+   * so a hard refresh on a deep link resolves instead of bouncing to login.
    * A read that fails counts as signed out but is not cached, so the next
    * navigation tries again.
    */
-  async restore(): Promise<SessionResponse | null> {
-    if (this.resolved) {
-      return this._session();
-    }
+  async restore(): Promise<Admission> {
+    if (this.resolved) return this._admission();
 
     this.inFlight ??= this.read()
-      .catch(() => null)
+      .catch(() => SIGNED_OUT)
       .finally(() => {
         this.inFlight = null;
       });
@@ -41,48 +48,56 @@ export class Auth {
     return this.inFlight;
   }
 
-  async signIn(email: string, password: string): Promise<void> {
+  async signIn(email: string, password: string): Promise<Admission> {
     await firstValueFrom(this.http.post(`${this.base}/sign-in/email`, { email, password }));
-    // Sign-in answers with the user but not the active organization, so read the
-    // canonical session back before anything routes on it.
-    await this.read();
-  }
-
-  /**
-   * Creates the account and signs it in. The API provisions the new organization
-   * after the account row commits, so read the session back rather than trusting the
-   * sign-up response to carry it.
-   */
-  async signUp(name: string, email: string, password: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${this.base}/sign-up/email`, { name, email, password }));
-    await this.read();
+    return this.read();
   }
 
   async signOut(): Promise<void> {
     try {
       await firstValueFrom(this.http.post(`${this.base}/sign-out`, {}));
     } finally {
-      this._session.set(null);
+      this._admission.set(SIGNED_OUT);
       this.resolved = true;
     }
   }
 
+  async setPassword(newPassword: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post(`${environment.apiBaseUrl}/account/password`, { newPassword }),
+      );
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 409) {
+        await this.read().catch(() => undefined);
+      }
+      throw error;
+    }
+
+    await this.read();
+  }
+
   /**
-   * Drops the cached session without calling the API. Used when the API rejects a
+   * Drops the cached admission without calling the API. Used when the API rejects a
    * request the cookie was supposed to cover, so the next guard sends us to login.
    */
   forget(): void {
-    this._session.set(null);
+    this._admission.set(SIGNED_OUT);
     this.resolved = true;
   }
 
-  private async read(): Promise<SessionResponse | null> {
-    const session = await firstValueFrom(
-      this.http.get<SessionResponse | null>(`${this.base}/get-session`),
+  /** Reads admission again after a write that changes the phase or the workspace. */
+  refresh(): Promise<Admission> {
+    return this.read();
+  }
+
+  private async read(): Promise<Admission> {
+    const admission = await firstValueFrom(
+      this.http.get<Admission>(`${environment.apiBaseUrl}/workspaces/admission`),
     );
 
-    this._session.set(session);
+    this._admission.set(admission);
     this.resolved = true;
-    return session;
+    return admission;
   }
 }

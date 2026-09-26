@@ -1,10 +1,25 @@
 <header class="shell-gutter flex h-14 items-center justify-between gap-4 border-b border-border bg-card">
-  <a routerLink="/leads" class="font-heading text-base font-semibold text-heading">Lead Inbox</a>
+  <a routerLink="/leads" class="flex items-center gap-2 font-heading text-base font-semibold text-heading">
+    @if (workspace()?.logoUrl; as logo) {
+      <img [src]="logo" alt="" class="size-6 rounded-base object-cover" />
+    }
+    {{ workspace()?.name ?? 'Lead Inbox' }}
+  </a>
 
   @if (user(); as user) {
     <div class="flex items-center gap-3">
       <span class="hidden text-sm text-muted-foreground sm:inline">{{ user.email }}</span>
-      <!-- Phones have no sidebar, so this link is their way into Settings. -->
+      <!-- Phones have no sidebar, so these links are their way into the app. -->
+      <a
+        hlmBtn
+        variant="ghost"
+        size="icon-sm"
+        routerLink="/content"
+        aria-label="Content"
+        class="md:hidden"
+      >
+        <ng-icon name="lucideFileText" aria-hidden="true" />
+      </a>
       <a
         hlmBtn
         variant="ghost"

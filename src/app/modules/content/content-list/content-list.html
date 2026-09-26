@@ -1,0 +1,230 @@
+<div class="grid gap-5">
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-xl">
+        Content
+        @if (count() !== null) {
+          <span class="ms-0.5 font-normal text-muted-foreground tabular-nums">({{ count() }})</span>
+        }
+      </h1>
+      @if (range(); as range) {
+        <p class="mt-1 text-sm text-muted-foreground">
+          Showing {{ range.first }} to {{ range.last }} of {{ range.total }}.
+        </p>
+      }
+    </div>
+
+    <hlm-dialog #starterDialog aria-labelledby="starter-heading">
+      <div class="flex flex-wrap gap-2">
+        <button hlmBtn type="button" (click)="begin('post', starterDialog)">
+          <ng-icon name="lucideFileText" aria-hidden="true" />
+          Article
+        </button>
+        <button hlmBtn type="button" variant="outline" (click)="begin('page', starterDialog)">
+          <ng-icon name="lucidePanelTop" aria-hidden="true" />
+          Landing page
+        </button>
+      </div>
+
+      <hlm-dialog-content *hlmDialogPortal>
+        <form class="grid gap-6" (submit)="create($event, starterDialog)">
+          <div hlmDialogHeader>
+            <h2 id="starter-heading" class="text-base leading-none font-medium">
+              {{ starterKind() === 'post' ? 'New article' : 'New landing page' }}
+            </h2>
+            <p class="text-sm text-muted-foreground">
+              {{
+                starterKind() === 'post'
+                  ? 'Starts with a place to write.'
+                  : 'Starts with a few sections you can fill in.'
+              }}
+            </p>
+          </div>
+
+          @if (starterError(); as message) {
+            <div hlmAlert variant="destructive">
+              <p hlmAlertTitle>Page not created</p>
+              <p hlmAlertDescription>{{ message }}</p>
+            </div>
+          }
+
+          <div hlmField class="gap-1.5">
+            <label hlmFieldLabel for="starter-title">Title</label>
+            <input
+              hlmInput
+              id="starter-title"
+              type="text"
+              autocomplete="off"
+              maxlength="200"
+              [value]="starterTitle()"
+              (input)="titleInput($event)"
+            />
+            <p hlmFieldDescription class="text-xs">
+              @if (starterSlug(); as slug) {
+                The link will be {{ slug }}.
+              } @else {
+                The link is made from the title.
+              }
+            </p>
+          </div>
+
+          <div hlmDialogFooter>
+            <button hlmBtn type="button" variant="outline" [disabled]="creating()" (click)="starterDialog.close()">
+              Cancel
+            </button>
+            <button hlmBtn type="submit" [disabled]="creating()">
+              @if (creating()) {
+                <hlm-spinner aria-label="Creating page" />
+              }
+              {{ creating() ? 'Creating' : 'Create' }}
+            </button>
+          </div>
+        </form>
+      </hlm-dialog-content>
+    </hlm-dialog>
+  </header>
+
+  <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-border">
+    <nav aria-label="Filter content by type" class="flex flex-wrap items-center gap-1">
+      @for (filter of kindFilters(); track filter.label) {
+        <a
+          [routerLink]="[]"
+          [queryParams]="filter.queryParams"
+          queryParamsHandling="merge"
+          [attr.aria-current]="filter.active ? 'page' : null"
+          class="-mb-px border-b-2 px-3 py-2 text-sm transition-colors"
+          [class]="
+            filter.active
+              ? 'border-primary font-medium text-heading'
+              : 'border-transparent text-muted-foreground hover:text-heading'
+          "
+        >
+          {{ filter.label }}
+        </a>
+      }
+    </nav>
+
+    <nav aria-label="Filter content by status" class="flex flex-wrap items-center gap-1">
+      @for (filter of statusFilters(); track filter.label) {
+        <a
+          [routerLink]="[]"
+          [queryParams]="filter.queryParams"
+          queryParamsHandling="merge"
+          [attr.aria-current]="filter.active ? 'page' : null"
+          class="-mb-px border-b-2 px-3 py-2 text-sm transition-colors"
+          [class]="
+            filter.active
+              ? 'border-primary font-medium text-heading'
+              : 'border-transparent text-muted-foreground hover:text-heading'
+          "
+        >
+          {{ filter.label }}
+        </a>
+      }
+    </nav>
+  </div>
+
+  @if (errorMessage(); as message) {
+    <div hlmAlert variant="destructive">
+      <p hlmAlertTitle>Could not load content</p>
+      <p hlmAlertDescription>{{ message }}</p>
+      <button hlmBtn variant="outline" size="sm" class="mt-3 w-fit" (click)="reload()">
+        Try again
+      </button>
+    </div>
+  } @else if (isLoading()) {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable aria-label="Content, loading">
+        <tbody hlmTBody>
+          @for (row of skeletonRows; track row) {
+            <tr hlmTr>
+              <td hlmTd class="py-3">
+                <span hlmSkeleton class="h-4 w-48"></span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="rounded-base border border-dashed border-border bg-card px-6 py-14 text-center">
+      <h2 class="text-base">{{ emptyTitle() }}</h2>
+      <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{{ emptyBody() }}</p>
+    </div>
+  } @else {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable aria-label="Content">
+        <thead hlmTHead class="bg-muted/40">
+          <tr hlmTr>
+            <th hlmTh scope="col">Title</th>
+            <th hlmTh scope="col">Type</th>
+            <th hlmTh scope="col">Status</th>
+            <th hlmTh scope="col">Updated</th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (row of rows(); track row.id) {
+            <tr hlmTr>
+              <td hlmTd class="group/page relative min-w-40 max-w-md py-3 align-middle whitespace-normal">
+                <a
+                  [routerLink]="[row.id]"
+                  queryParamsHandling="preserve"
+                  class="font-medium text-heading underline-offset-4 outline-none group-hover/page:underline after:absolute after:inset-0 focus-visible:underline focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+                >
+                  {{ row.title }}
+                </a>
+              </td>
+              <td hlmTd class="py-3">
+                <span hlmBadge variant="secondary">{{ kindLabel(row.kind) }}</span>
+              </td>
+              <td hlmTd class="py-3">
+                <span hlmBadge [variant]="row.status === 'published' ? 'success' : 'warning'">
+                  {{ statusLabel(row.status) }}
+                </span>
+              </td>
+              <td hlmTd class="py-3 text-muted-foreground">
+                {{ row.updatedAt | date: 'MMM d, y, HH:mm' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (meta(); as meta) {
+      @if (meta.lastPage > 1) {
+        <nav aria-label="Pagination" class="flex items-center justify-between gap-4">
+          <p class="text-sm text-muted-foreground">Page {{ meta.page }} of {{ meta.lastPage }}</p>
+          <div class="flex gap-2">
+            @if (meta.page > 1) {
+              <a
+                hlmBtn
+                variant="outline"
+                size="sm"
+                [routerLink]="[]"
+                [queryParams]="{ page: meta.page - 1 }"
+                queryParamsHandling="merge"
+              >
+                <ng-icon name="lucideChevronLeft" aria-hidden="true" />
+                Previous
+              </a>
+            }
+            @if (meta.page < meta.lastPage) {
+              <a
+                hlmBtn
+                variant="outline"
+                size="sm"
+                [routerLink]="[]"
+                [queryParams]="{ page: meta.page + 1 }"
+                queryParamsHandling="merge"
+              >
+                Next
+                <ng-icon name="lucideChevronRight" aria-hidden="true" />
+              </a>
+            }
+          </div>
+        </nav>
+      }
+    }
+  }
+</div>

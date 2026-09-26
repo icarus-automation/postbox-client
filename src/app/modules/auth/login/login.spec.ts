@@ -7,28 +7,20 @@ import { Login } from './login';
 
 const BASE = `${environment.apiBaseUrl}/auth`;
 const SIGN_IN_URL = `${BASE}/sign-in/email`;
-const GET_SESSION_URL = `${BASE}/get-session`;
+const ADMISSION_URL = `${environment.apiBaseUrl}/workspaces/admission`;
 
-const SESSION = {
-  session: {
-    id: 's',
-    token: 't',
-    userId: 'u',
-    activeOrganizationId: 'o',
-    expiresAt: '',
-    createdAt: '',
-    updatedAt: '',
-    ipAddress: '',
-    userAgent: '',
-  },
-  user: {
-    id: 'u',
-    name: 'Ace Owner',
-    email: 'owner@local.test',
-    emailVerified: false,
-    image: null,
-    createdAt: '',
-    updatedAt: '',
+const ADMITTED = {
+  phase: 'admitted' as const,
+  user: { id: 'u', name: 'Ace Owner', email: 'owner@local.test' },
+  password: 'sealed' as const,
+  workspaceUrlPrefix: 'handshakes.cards/',
+  workspace: {
+    id: 'o',
+    name: 'Acme Inc',
+    slug: 'acme-inc',
+    website: null,
+    logoUrl: null,
+    role: 'owner' as const,
   },
 };
 
@@ -61,12 +53,12 @@ describe('Login', () => {
     await fixture.whenStable();
   }
 
-  /** Answers sign-in, then the session read it sets off. */
+  /** Answers sign-in, then the admission read it sets off. */
   async function answerSignIn(): Promise<void> {
-    http.expectOne(SIGN_IN_URL).flush({ token: 't', user: SESSION.user });
+    http.expectOne(SIGN_IN_URL).flush({ token: 't', user: ADMITTED.user });
 
-    const session = await vi.waitFor(() => http.expectOne(GET_SESSION_URL));
-    session.flush(SESSION);
+    const admission = await vi.waitFor(() => http.expectOne(ADMISSION_URL));
+    admission.flush(ADMITTED);
     await fixture.whenStable();
   }
 
@@ -101,13 +93,13 @@ describe('Login', () => {
     expect(el.textContent).not.toContain('no sign-up');
   });
 
-  it('offers Google as coming soon and never as a live button', () => {
+  it('offers a live Google button', () => {
     const google = [...el.querySelectorAll('button')].find((b) =>
       b.textContent?.includes('Continue with Google'),
     )!;
 
-    expect(google.disabled).toBe(true);
-    expect(google.textContent).toContain('coming soon');
+    expect(google.disabled).toBe(false);
+    expect(google.querySelector('svg')).toBeTruthy();
   });
 
   it('holds field errors back until the field has been touched', async () => {
@@ -149,10 +141,10 @@ describe('Login', () => {
       email: 'owner@local.test',
       password: 'password123',
     });
-    signIn.flush({ token: 't', user: SESSION.user });
+    signIn.flush({ token: 't', user: ADMITTED.user });
 
-    const session = await vi.waitFor(() => http.expectOne(GET_SESSION_URL));
-    session.flush(SESSION);
+    const admission = await vi.waitFor(() => http.expectOne(ADMISSION_URL));
+    admission.flush(ADMITTED);
 
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/leads'));
   });
@@ -193,6 +185,24 @@ describe('Login', () => {
     });
     expect(alert.textContent).toContain('Could not open leads');
     expect(alert.textContent).not.toContain('Sign in failed');
+  });
+
+  it('shows a Google callback error and hides the raw code', async () => {
+    fixture.componentRef.setInput('error', 'unable_to_link_account');
+    await fixture.whenStable();
+
+    const alert = el.querySelector('[role="alert"]')?.textContent ?? '';
+    expect(alert).toContain('Google could not be linked to this account.');
+    expect(alert).not.toContain('unable_to_link_account');
+  });
+
+  it('replaces an unknown Google callback code with one sentence', async () => {
+    fixture.componentRef.setInput('error', '<script>');
+    await fixture.whenStable();
+
+    const alert = el.querySelector('[role="alert"]')?.textContent ?? '';
+    expect(alert).toContain('Google sign-in did not finish.');
+    expect(alert).not.toContain('<script>');
   });
 
   it('shows the message the API gave for bad credentials', async () => {

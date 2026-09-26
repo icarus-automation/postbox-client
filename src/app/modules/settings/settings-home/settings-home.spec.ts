@@ -37,12 +37,11 @@ describe('SettingsHome', () => {
     expect(link.closest('div')?.classList).toContain('relative');
   });
 
-  it('shows a screen that does not exist yet as Soon, with nowhere to click', () => {
-    const heading = [...el.querySelectorAll('h3')].find((each) => text(each)?.startsWith('Organization'))!;
+  it('opens organization from the General section', () => {
+    const link = el.querySelector<HTMLAnchorElement>('a[href="/settings/organization"]')!;
 
-    expect(text(heading)).toBe('Organization Soon');
-    expect(heading.querySelector('a')).toBeNull();
-    expect(heading.closest('div')?.className).toContain('border-dashed');
+    expect(text(link)).toBe('Organization');
+    expect(link.closest('div')?.className).not.toContain('border-dashed');
   });
 
   it('uses the wide page width', () => {

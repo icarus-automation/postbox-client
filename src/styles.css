@@ -185,3 +185,29 @@
 @utility field-label {
   @apply text-xs font-medium tracking-wide text-muted-foreground uppercase;
 }
+
+/*
+  Rich text, in the editor and in the local preview. The markup is inserted by TipTap
+  and by [innerHTML], so it never receives a component's style scope.
+*/
+.content-prose p {
+  margin: 0.4rem 0;
+}
+.content-prose ul {
+  margin: 0.4rem 0;
+  list-style: disc;
+  padding-inline-start: 1.25rem;
+}
+.content-prose ol {
+  margin: 0.4rem 0;
+  list-style: decimal;
+  padding-inline-start: 1.25rem;
+}
+.content-prose blockquote {
+  margin: 0.4rem 0;
+  border-inline-start: 2px solid var(--border);
+  padding-inline-start: 0.75rem;
+}
+.content-prose a {
+  text-decoration: underline;
+}

@@ -33,23 +33,44 @@ describe('Header', () => {
 
   it('shows the signed-in email and a named sign out control', async () => {
     const restored = TestBed.inject(Auth).restore();
-    http.expectOne(`${environment.apiBaseUrl}/auth/get-session`).flush({
-      session: { id: 's', token: 't', userId: 'u', activeOrganizationId: 'o', expiresAt: '', createdAt: '', updatedAt: '', ipAddress: '', userAgent: '' },
-      user: { id: 'u', name: 'Ace Owner', email: 'owner@local.test', emailVerified: false, image: null, createdAt: '', updatedAt: '' },
+    http.expectOne(`${environment.apiBaseUrl}/workspaces/admission`).flush({
+      phase: 'admitted',
+      user: { id: 'u', name: 'Ace Owner', email: 'owner@local.test' },
+      password: 'sealed',
+      workspaceUrlPrefix: 'handshakes.cards/',
+      workspace: {
+        id: 'o',
+        name: 'Acme Inc',
+        slug: 'acme-inc',
+        website: null,
+        logoUrl: null,
+        role: 'owner',
+      },
     });
     await restored;
     await fixture.whenStable();
 
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('owner@local.test');
+    expect(el.textContent).toContain('Acme Inc');
     expect(el.querySelector('button')?.textContent?.trim()).toBe('Sign out');
   });
 
   it('gives phones, which have no sidebar, a named way into settings', async () => {
     const restored = TestBed.inject(Auth).restore();
-    http.expectOne(`${environment.apiBaseUrl}/auth/get-session`).flush({
-      session: { id: 's', token: 't', userId: 'u', activeOrganizationId: 'o', expiresAt: '', createdAt: '', updatedAt: '', ipAddress: '', userAgent: '' },
-      user: { id: 'u', name: 'Ace Owner', email: 'owner@local.test', emailVerified: false, image: null, createdAt: '', updatedAt: '' },
+    http.expectOne(`${environment.apiBaseUrl}/workspaces/admission`).flush({
+      phase: 'admitted',
+      user: { id: 'u', name: 'Ace Owner', email: 'owner@local.test' },
+      password: 'sealed',
+      workspaceUrlPrefix: 'handshakes.cards/',
+      workspace: {
+        id: 'o',
+        name: 'Acme Inc',
+        slug: 'acme-inc',
+        website: null,
+        logoUrl: null,
+        role: 'owner',
+      },
     });
     await restored;
     await fixture.whenStable();

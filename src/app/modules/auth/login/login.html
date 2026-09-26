@@ -1,6 +1,14 @@
 <app-auth-shell heading="Sign in to Lead Inbox">
+  <app-google-button />
+
+  <div class="flex items-center gap-3 text-xs text-muted-foreground">
+    <span class="h-px flex-1 bg-border"></span>
+    or
+    <span class="h-px flex-1 bg-border"></span>
+  </div>
+
   <form [formRoot]="form" class="grid gap-4">
-    @if (error(); as message) {
+    @if (notice(); as message) {
       <div hlmAlert variant="destructive">
         <p hlmAlertTitle>{{ auth.isSignedIn() ? 'Could not open leads' : 'Sign in failed' }}</p>
         <p hlmAlertDescription>{{ message }}</p>

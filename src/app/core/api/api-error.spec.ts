@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { apiErrorMessage, isNotFound, isUnauthorized } from './api-error';
+import { apiErrorMessage, isNotFound, isUnauthorized, shownError } from './api-error';
 
 describe('apiErrorMessage', () => {
   it('reads the message out of the Nest error envelope', () => {
@@ -45,6 +45,25 @@ describe('apiErrorMessage', () => {
 
   it('falls back for anything that is not an HTTP failure', () => {
     expect(apiErrorMessage(new TypeError('boom'), 'fallback')).toBe('fallback');
+  });
+});
+
+describe('shownError', () => {
+  it('shows the sentence a local failure already carries', () => {
+    expect(shownError(new Error('Logo upload failed'), 'Could not create the workspace.')).toBe(
+      'Logo upload failed',
+    );
+  });
+
+  it('still reads the API body for an HTTP failure', () => {
+    const error = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'That workspace URL is taken' },
+    });
+
+    expect(shownError(error, 'Could not create the workspace.')).toBe(
+      'That workspace URL is taken',
+    );
   });
 });
 

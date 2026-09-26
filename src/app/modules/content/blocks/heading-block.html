@@ -1,0 +1,40 @@
+@if (block(); as block) {
+  @if (preview()) {
+    @switch (block.level) {
+      @case (1) {
+        <h1 class="font-heading text-3xl text-heading">{{ block.text }}</h1>
+      }
+      @case (2) {
+        <h2 class="font-heading text-2xl text-heading">{{ block.text }}</h2>
+      }
+      @case (3) {
+        <h3 class="font-heading text-xl text-heading">{{ block.text }}</h3>
+      }
+    }
+  } @else {
+    <div class="grid gap-1.5">
+      <label hlmLabel [for]="'heading-size-' + block.id">Size</label>
+      <hlm-select class="w-full max-w-48" [value]="block.level" [itemToString]="levelName" (valueChange)="setLevel($event)">
+        <hlm-select-trigger class="w-full" [buttonId]="'heading-size-' + block.id">
+          <hlm-select-value />
+        </hlm-select-trigger>
+        <hlm-select-content *hlmSelectPortal>
+          <hlm-select-item [value]="1">Large</hlm-select-item>
+          <hlm-select-item [value]="2">Medium</hlm-select-item>
+          <hlm-select-item [value]="3">Small</hlm-select-item>
+        </hlm-select-content>
+      </hlm-select>
+    </div>
+    <div class="grid gap-1.5">
+      <label hlmLabel [for]="'heading-text-' + block.id">Heading</label>
+      <input
+        hlmInput
+        [id]="'heading-text-' + block.id"
+        type="text"
+        maxlength="200"
+        [value]="block.text"
+        (input)="setText($event)"
+      />
+    </div>
+  }
+}

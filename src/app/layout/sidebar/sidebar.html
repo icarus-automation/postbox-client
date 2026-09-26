@@ -5,6 +5,14 @@
 <div class="sticky top-14 flex h-[calc(100dvh-3.5rem)] flex-col">
   <nav aria-label="Main" class="flex flex-1 flex-col gap-1 p-3">
     <a
+      routerLink="/content"
+      routerLinkActive="bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+      class="flex items-center gap-2 rounded-base px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    >
+      <ng-icon name="lucideFileText" aria-hidden="true" />
+      Content
+    </a>
+    <a
       routerLink="/leads"
       routerLinkActive="bg-sidebar-accent font-medium text-sidebar-accent-foreground"
       class="flex items-center gap-2 rounded-base px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"

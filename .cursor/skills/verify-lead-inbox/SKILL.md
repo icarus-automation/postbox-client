@@ -69,11 +69,11 @@ A deep link while signed out becomes `/login?returnUrl=<that path>`. After sign-
 
 ### Stable handles
 
-**Sign in.** Textboxes `Email` (`#email`) and `Password` (`#password`). Submit `Sign in`. The button reads `Signing in` while the request is in flight. Failures use an alert titled `Sign in failed`. Footer link `Create one` goes to `/sign-up`. The Google control's accessible name is `Continue with Google (coming soon)`. It is disabled. The visible badge still reads `Soon`.
+**Sign in.** Textboxes `Email` (`#email`) and `Password` (`#password`). Submit `Sign in`. The button reads `Signing in` while the request is in flight. Failures use an alert titled `Sign in failed`. Footer link `Create one` goes to `/sign-up`. The Google control's accessible name is `Continue with Google`. It is enabled.
 
-**Sign up.** Textboxes `Name` (`#name`), `Email` (`#email`), `Password` (`#password`). Submit `Create account`. Description: `Your account includes an organization and an empty leads list.` Password help: `At least 8 characters.` Failures use `Sign up failed`. Footer link `Sign in` goes to `/login`.
+**Sign up.** No email form. The only action is `Continue with Google`. The description is `Continue with Google, then name your workspace.` Footer link `Sign in` goes to `/login`. A signed-in user with no organization is sent to `/create-organization` and cannot open the app shell until the workspace exists.
 
-**Chrome.** Brand link `Lead Inbox`. Nav `Main` has `Leads`. Nav `Settings` has `Settings`. Header shows the user email and `Sign out`. Sign out opens a dialog titled `Sign out?` with `Stay signed in` and a second `Sign out`.
+**Chrome.** Brand link is the active organization name, with its logo when one is set. Nav `Main` has `Content` and `Leads`. Nav `Settings` has `Settings`. Header shows the user email and `Sign out`. Sign out opens a dialog titled `Sign out?` with `Stay signed in` and a second `Sign out`.
 
 **Inbox.** Heading `Leads (N)` once the page lands, including `Leads (0)` on an empty org. Filter nav `Filter leads by status` with `All`, `New`, `Contacted`, `Qualified`, then a rule, then `Archived`. The current tab has `aria-current="page"`. Table `aria-label="Leads"`. The Contact cell is a link named after the person. Empty copy: `No leads yet`, `No leads with this status`, `No archived leads`. Columns is a button that opens a popover with legend `Fields to show in the table` and `Reset columns` once someone has picked. Pagination, when present, is `Pagination` with `Previous` and `Next`. Query params: `page`, `status`, `archived=true`. Links into a lead use `queryParamsHandling="preserve"`. The header email is visible text, not an ARIA name. Prove it from the screenshot.
 
@@ -85,8 +85,8 @@ A deep link while signed out becomes `/login?returnUrl=<that path>`. After sign-
 
 Do not sign in as the user's own account. Create a verification org.
 
-- For the [account](features/account.md) feature, sign up in the browser.
-- For every other feature, create the org through the helper so you do not re-prove sign-up:
+- For the [account](features/account.md) feature, stay signed out and prove the cards. Google consent is not part of that recipe.
+- For every other feature, create the org through the helper so you do not re-prove sign-in:
 
 ```bash
 node .cursor/skills/verify-lead-inbox/scripts/verify.mjs account-create
@@ -138,7 +138,7 @@ All live in `.cursor/skills/verify-lead-inbox/scripts/verify.mjs`. Run them from
 | --- | --- |
 | `launch` | Adopt or start the client on 4200 after cms-api answers |
 | `doctor` | Identity, API health, CORS, session route |
-| `account-create` | Unique user and org through `POST /auth/sign-up/email` |
+| `account-create` | Rejects email sign-up, writes a password user with no organization, then `POST /workspaces` |
 | `seed-lead` | Mint an API key and `POST /leads` for that org |
 | `cleanup` | Kill only what launch started, keep evidence |
 

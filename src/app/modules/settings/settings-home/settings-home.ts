@@ -40,9 +40,9 @@ export class SettingsHome {
       entries: [
         {
           title: 'Organization',
-          description: 'Your organization name, and who belongs to it.',
+          description: 'Your organization name, website, and logo.',
           icon: 'lucideBuilding2',
-          soon: true,
+          route: '/settings/organization',
         },
       ],
     },

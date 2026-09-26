@@ -3,32 +3,26 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
 import { Auth } from './auth';
-import type { SessionResponse } from './auth.types';
+import type { Admission } from './auth.types';
 
-const BASE = `${environment.apiBaseUrl}/auth`;
+const ADMISSION_URL = `${environment.apiBaseUrl}/workspaces/admission`;
 
-const SESSION: SessionResponse = {
-  session: {
-    id: 'sess-1',
-    token: 'tok-1',
-    userId: 'user-1',
-    activeOrganizationId: 'org-1',
-    expiresAt: '2026-09-19T16:39:57.034Z',
-    createdAt: '2026-09-12T16:39:57.034Z',
-    updatedAt: '2026-09-12T16:39:57.034Z',
-    ipAddress: '',
-    userAgent: 'test',
-  },
-  user: {
-    id: 'user-1',
-    name: 'Ace Owner',
-    email: 'owner@local.test',
-    emailVerified: false,
-    image: null,
-    createdAt: '2026-09-12T16:39:42.899Z',
-    updatedAt: '2026-09-12T16:39:42.899Z',
+const ADMITTED: Admission = {
+  phase: 'admitted',
+  user: { id: 'user-1', name: 'Ace Owner', email: 'owner@local.test' },
+  password: 'sealed',
+  workspaceUrlPrefix: 'handshakes.cards/',
+  workspace: {
+    id: 'org-1',
+    name: 'Acme Inc',
+    slug: 'acme-inc',
+    website: null,
+    logoUrl: null,
+    role: 'owner',
   },
 };
+
+const SIGNED_OUT: Admission = { phase: 'signed-out' };
 
 describe('Auth', () => {
   let auth: Auth;
@@ -45,23 +39,23 @@ describe('Auth', () => {
 
   afterEach(() => http.verify());
 
-  it('reads the session once and serves the cached answer after that', async () => {
+  it('reads admission once and serves the cached answer after that', async () => {
     const pending = auth.restore();
-    http.expectOne(`${BASE}/get-session`).flush(SESSION);
+    http.expectOne(ADMISSION_URL).flush(ADMITTED);
 
-    expect(await pending).toEqual(SESSION);
+    expect(await pending).toEqual(ADMITTED);
     expect(auth.isSignedIn()).toBe(true);
     expect(auth.user()?.email).toBe('owner@local.test');
+    expect(auth.workspace()?.slug).toBe('acme-inc');
 
-    // A second restore must not reach the API again.
-    expect(await auth.restore()).toEqual(SESSION);
+    expect(await auth.restore()).toEqual(ADMITTED);
   });
 
-  it('treats the literal null body as signed out', async () => {
+  it('treats a signed-out body as signed out', async () => {
     const pending = auth.restore();
-    http.expectOne(`${BASE}/get-session`).flush(null);
+    http.expectOne(ADMISSION_URL).flush(SIGNED_OUT);
 
-    expect(await pending).toBeNull();
+    expect(await pending).toEqual(SIGNED_OUT);
     expect(auth.isSignedIn()).toBe(false);
     expect(auth.user()).toBeNull();
   });
@@ -70,92 +64,76 @@ describe('Auth', () => {
     const first = auth.restore();
     const second = auth.restore();
 
-    http.expectOne(`${BASE}/get-session`).flush(SESSION);
+    http.expectOne(ADMISSION_URL).flush(ADMITTED);
 
-    expect(await first).toEqual(SESSION);
-    expect(await second).toEqual(SESSION);
+    expect(await first).toEqual(ADMITTED);
+    expect(await second).toEqual(ADMITTED);
   });
 
   it('does not cache a failed read, so the next navigation tries again', async () => {
     const pending = auth.restore();
-    http.expectOne(`${BASE}/get-session`).flush('', { status: 500, statusText: 'Server Error' });
+    http.expectOne(ADMISSION_URL).flush('', { status: 500, statusText: 'Server Error' });
 
-    expect(await pending).toBeNull();
+    expect(await pending).toEqual(SIGNED_OUT);
 
     const retry = auth.restore();
-    http.expectOne(`${BASE}/get-session`).flush(SESSION);
-    expect(await retry).toEqual(SESSION);
+    http.expectOne(ADMISSION_URL).flush(ADMITTED);
+    expect(await retry).toEqual(ADMITTED);
   });
 
-  it('reads the canonical session back after signing in', async () => {
+  it('reads admission after signing in', async () => {
     const pending = auth.signIn('owner@local.test', 'password123');
 
-    const signIn = http.expectOne(`${BASE}/sign-in/email`);
+    const signIn = http.expectOne(`${environment.apiBaseUrl}/auth/sign-in/email`);
     expect(signIn.request.method).toBe('POST');
     expect(signIn.request.body).toEqual({ email: 'owner@local.test', password: 'password123' });
-    signIn.flush({ token: 'tok-1', user: SESSION.user });
+    signIn.flush({ token: 'tok-1', user: { email: 'owner@local.test' } });
 
-    const session = await vi.waitFor(() => http.expectOne(`${BASE}/get-session`));
-    session.flush(SESSION);
+    const admission = await vi.waitFor(() => http.expectOne(ADMISSION_URL));
+    admission.flush(ADMITTED);
 
-    await pending;
-    expect(auth.session()?.session.activeOrganizationId).toBe('org-1');
+    expect(await pending).toEqual(ADMITTED);
+    expect(auth.workspace()?.id).toBe('org-1');
   });
 
-  it('creates the account, then reads the session it signed in with', async () => {
-    const pending = auth.signUp('Ace Owner', 'owner@local.test', 'password123');
-
-    const signUp = http.expectOne(`${BASE}/sign-up/email`);
-    expect(signUp.request.method).toBe('POST');
-    expect(signUp.request.body).toEqual({
-      name: 'Ace Owner',
-      email: 'owner@local.test',
-      password: 'password123',
-    });
-    signUp.flush({ token: 'tok-1', user: SESSION.user });
-
-    const session = await vi.waitFor(() => http.expectOne(`${BASE}/get-session`));
-    session.flush(SESSION);
-
-    await pending;
-    expect(auth.isSignedIn()).toBe(true);
-    expect(auth.session()?.session.activeOrganizationId).toBe('org-1');
-  });
-
-  it('leaves the visitor signed out when sign-up is refused', async () => {
-    const pending = auth.signUp('Ace Owner', 'owner@local.test', 'password123');
-
-    http
-      .expectOne(`${BASE}/sign-up/email`)
-      .flush(
-        { message: 'User already exists. Use another email.', code: 'USER_ALREADY_EXISTS' },
-        { status: 422, statusText: 'Unprocessable Entity' },
-      );
-
-    await expect(pending).rejects.toBeDefined();
-    expect(auth.isSignedIn()).toBe(false);
-  });
-
-  it('clears the session even when sign-out fails', async () => {
+  it('clears admission even when sign-out fails', async () => {
     const restored = auth.restore();
-    http.expectOne(`${BASE}/get-session`).flush(SESSION);
+    http.expectOne(ADMISSION_URL).flush(ADMITTED);
     await restored;
 
     const pending = auth.signOut();
-    http.expectOne(`${BASE}/sign-out`).flush('', { status: 500, statusText: 'Server Error' });
+    http.expectOne(`${environment.apiBaseUrl}/auth/sign-out`).flush('', {
+      status: 500,
+      statusText: 'Server Error',
+    });
 
     await expect(pending).rejects.toBeDefined();
     expect(auth.isSignedIn()).toBe(false);
   });
 
-  it('forgets the session without calling the API', async () => {
+  it('forgets admission without calling the API', async () => {
     const restored = auth.restore();
-    http.expectOne(`${BASE}/get-session`).flush(SESSION);
+    http.expectOne(ADMISSION_URL).flush(ADMITTED);
     await restored;
 
     auth.forget();
 
     expect(auth.isSignedIn()).toBe(false);
-    expect(await auth.restore()).toBeNull();
+    expect(await auth.restore()).toEqual(SIGNED_OUT);
+  });
+
+  it('posts a new password and reloads admission', async () => {
+    const pending = auth.setPassword('correct-horse');
+
+    const setPassword = http.expectOne(`${environment.apiBaseUrl}/account/password`);
+    expect(setPassword.request.body).toEqual({ newPassword: 'correct-horse' });
+    setPassword.flush({ status: true });
+
+    const sealed: Admission = { ...ADMITTED, password: 'sealed' };
+    const admission = await vi.waitFor(() => http.expectOne(ADMISSION_URL));
+    admission.flush(sealed);
+
+    await pending;
+    expect(auth.admission()).toEqual(sealed);
   });
 });

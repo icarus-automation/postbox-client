@@ -34,6 +34,14 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+/** A thrown Error carries its own sentence. HTTP failures still use the API body. */
+export function shownError(error: unknown, fallback: string): string {
+  if (error instanceof Error && !(error instanceof HttpErrorResponse) && error.message.length > 0) {
+    return error.message;
+  }
+  return apiErrorMessage(error, fallback);
+}
+
 /** True when the API turned the request down for want of a valid session. */
 export function isUnauthorized(error: unknown): boolean {
   return error instanceof HttpErrorResponse && error.status === 401;

@@ -1,14 +1,27 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from '@core/auth/auth.guard';
+import { authGuard, guestGuard, onboardingGuard } from '@core/auth/auth.guard';
 import { MainLayout } from './layout/main-layout/main-layout';
 
 export const routes: Routes = [
+  {
+    path: 'create-organization',
+    canActivate: [onboardingGuard],
+    title: 'Create organization | Lead Inbox',
+    loadComponent: () =>
+      import('./modules/auth/create-organization/create-organization').then(
+        (m) => m.CreateOrganization,
+      ),
+  },
   {
     path: '',
     component: MainLayout,
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'leads' },
+      {
+        path: 'content',
+        loadChildren: () => import('./modules/content/content.routes').then((m) => m.routes),
+      },
       {
         path: 'leads',
         loadChildren: () => import('./modules/leads/leads.routes').then((m) => m.routes),

@@ -1,0 +1,73 @@
+@if (block(); as block) {
+  @if (!preview()) {
+    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Image position">
+      <span class="text-sm text-muted-foreground">Image on the</span>
+      <button
+        hlmBtn
+        type="button"
+        size="sm"
+        [variant]="block.side === 'image_left' ? 'default' : 'outline'"
+        [attr.aria-pressed]="block.side === 'image_left'"
+        (click)="setSide('image_left')"
+      >
+        Left
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        size="sm"
+        [variant]="block.side === 'image_right' ? 'default' : 'outline'"
+        [attr.aria-pressed]="block.side === 'image_right'"
+        (click)="setSide('image_right')"
+      >
+        Right
+      </button>
+    </div>
+  }
+
+  <div class="grid items-start gap-4 md:grid-cols-2">
+    @if (block.side === 'image_right') {
+      <ng-container *ngTemplateOutlet="copy" />
+      <ng-container *ngTemplateOutlet="picture" />
+    } @else {
+      <ng-container *ngTemplateOutlet="picture" />
+      <ng-container *ngTemplateOutlet="copy" />
+    }
+  </div>
+
+  <ng-template #picture>
+    @if (preview()) {
+      @if (block.image.media; as image) {
+        <img [src]="image.url" [alt]="image.alt" class="max-h-80 w-full rounded-md object-contain" />
+      }
+    } @else {
+      <app-image-slot [media]="block.image.media" (mediaChange)="setMedia($event)" />
+    }
+  </ng-template>
+
+  <ng-template #copy>
+    <div class="grid gap-2">
+      @if (preview()) {
+        @if (block.heading) {
+          <h2 class="text-xl text-heading">{{ block.heading }}</h2>
+        }
+        @if (block.html) {
+          <div class="content-prose text-sm leading-relaxed" [innerHTML]="block.html"></div>
+        }
+      } @else {
+        <div class="grid gap-1.5">
+          <label hlmLabel [for]="'media-heading-' + block.id">Heading</label>
+          <input
+            hlmInput
+            [id]="'media-heading-' + block.id"
+            type="text"
+            maxlength="200"
+            [value]="block.heading ?? ''"
+            (input)="setHeading($event)"
+          />
+        </div>
+        <app-prose-editor [doc]="block.doc" label="Section text" (docChange)="onDoc($event)" />
+      }
+    </div>
+  </ng-template>
+}

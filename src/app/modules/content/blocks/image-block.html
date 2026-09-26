@@ -1,0 +1,9 @@
+@if (block(); as block) {
+  @if (preview()) {
+    @if (block.image.media; as image) {
+      <img [src]="image.url" [alt]="image.alt" class="max-h-96 w-full rounded-md object-contain" />
+    }
+  } @else {
+    <app-image-slot [media]="block.image.media" (mediaChange)="setMedia($event)" />
+  }
+}

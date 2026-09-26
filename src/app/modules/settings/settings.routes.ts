@@ -12,4 +12,10 @@ export const routes: Routes = [
     title: 'Lead fields | Lead Inbox',
     loadComponent: () => import('./lead-field-list/lead-field-list').then((m) => m.LeadFieldList),
   },
+  {
+    path: 'organization',
+    title: 'Organization | Lead Inbox',
+    loadComponent: () =>
+      import('./organization/organization-settings').then((m) => m.OrganizationSettings),
+  },
 ];
