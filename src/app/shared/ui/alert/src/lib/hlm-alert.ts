@@ -7,6 +7,8 @@ const alertVariants = cva("grid gap-0.5 rounded-lg border px-4 py-3 text-start t
 		variant: {
 			default: 'bg-card text-card-foreground',
 			destructive: 'text-destructive-ink bg-card *:data-[slot=alert-description]:text-destructive-ink *:[ng-icon]:text-current',
+			// The warning hue is a fill, too light to read as text, so the tint carries heading ink.
+			warning: 'border-warning/40 bg-muted-warning text-heading *:data-[slot=alert-description]:text-heading',
 		},
 	},
 	defaultVariants: {

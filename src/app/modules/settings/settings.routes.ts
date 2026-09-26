@@ -13,6 +13,18 @@ export const routes: Routes = [
     loadComponent: () => import('./lead-field-list/lead-field-list').then((m) => m.LeadFieldList),
   },
   {
+    path: 'categories',
+    title: 'Categories | Lead Inbox',
+    data: { kind: 'category' },
+    loadComponent: () => import('./blog-terms/blog-term-list').then((m) => m.BlogTermList),
+  },
+  {
+    path: 'tags',
+    title: 'Tags | Lead Inbox',
+    data: { kind: 'tag' },
+    loadComponent: () => import('./blog-terms/blog-term-list').then((m) => m.BlogTermList),
+  },
+  {
     path: 'organization',
     title: 'Organization | Lead Inbox',
     loadComponent: () =>

@@ -1,0 +1,9 @@
+@if (block(); as block) {
+  @if (preview()) {
+    @if (block.html) {
+      <div class="post-prose text-sm leading-relaxed" [innerHTML]="block.html"></div>
+    }
+  } @else {
+    <app-prose-editor [doc]="block.doc" label="Text" (docChange)="onDoc($event)" />
+  }
+}

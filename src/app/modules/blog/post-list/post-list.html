@@ -1,0 +1,244 @@
+<div class="grid gap-5">
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-xl">
+        Blog
+        @if (count() !== null) {
+          <span class="ms-0.5 font-normal text-muted-foreground tabular-nums">({{ count() }})</span>
+        }
+      </h1>
+      @if (range(); as range) {
+        <p class="mt-1 text-sm text-muted-foreground">
+          Showing {{ range.first }} to {{ range.last }} of {{ range.total }}.
+        </p>
+      }
+    </div>
+
+    <a hlmBtn [routerLink]="[newPostId]" queryParamsHandling="preserve">
+      <ng-icon name="lucidePlus" aria-hidden="true" />
+      New post
+    </a>
+  </header>
+
+  <!-- One toolbar: the status tabs on the left, the narrower filters on the right. -->
+  <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-border">
+    <nav aria-label="Filter posts by status" class="flex flex-wrap items-center gap-1">
+      @for (filter of statusFilters(); track filter.label) {
+        <a
+          [routerLink]="[]"
+          [queryParams]="filter.queryParams"
+          queryParamsHandling="merge"
+          [attr.aria-current]="filter.active ? 'page' : null"
+          class="-mb-px border-b-2 px-3 py-2 text-sm transition-colors"
+          [class]="
+            filter.active
+              ? 'border-primary font-medium text-heading'
+              : 'border-transparent text-muted-foreground hover:text-heading'
+          "
+        >
+          {{ filter.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="mb-2 flex flex-wrap items-center gap-2">
+      <form role="search" class="relative" (submit)="applySearch($event)">
+        <ng-icon
+          name="lucideSearch"
+          aria-hidden="true"
+          class="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          hlmInput
+          type="search"
+          aria-label="Search post titles"
+          placeholder="Search titles"
+          class="h-8 w-48 ps-8"
+          [value]="searchText()"
+          (input)="searchInput($event)"
+        />
+      </form>
+
+      <label class="sr-only" for="post-filter-category">Category</label>
+      <hlm-select
+        class="w-44"
+        [value]="currentCategory() ?? any"
+        [itemToString]="categoryName"
+        (valueChange)="filterBy('category', $event)"
+      >
+        <hlm-select-trigger size="sm" class="w-full" buttonId="post-filter-category">
+          <hlm-select-value placeholder="All categories" />
+        </hlm-select-trigger>
+        <hlm-select-content *hlmSelectPortal>
+          <hlm-select-item [value]="any">All categories</hlm-select-item>
+          @for (category of categoryOptions(); track category.id) {
+            <hlm-select-item [value]="category.slug">{{ category.name }}</hlm-select-item>
+          }
+        </hlm-select-content>
+      </hlm-select>
+
+      <label class="sr-only" for="post-filter-tag">Tag</label>
+      <hlm-select
+        class="w-40"
+        [value]="currentTag() ?? any"
+        [itemToString]="tagName"
+        (valueChange)="filterBy('tag', $event)"
+      >
+        <hlm-select-trigger size="sm" class="w-full" buttonId="post-filter-tag">
+          <hlm-select-value placeholder="All tags" />
+        </hlm-select-trigger>
+        <hlm-select-content *hlmSelectPortal>
+          <hlm-select-item [value]="any">All tags</hlm-select-item>
+          @for (tag of tagOptions(); track tag.id) {
+            <hlm-select-item [value]="tag.slug">{{ tag.name }}</hlm-select-item>
+          }
+        </hlm-select-content>
+      </hlm-select>
+    </div>
+  </div>
+
+  @if (errorMessage(); as message) {
+    <div hlmAlert variant="destructive">
+      <p hlmAlertTitle>Could not load posts</p>
+      <p hlmAlertDescription>{{ message }}</p>
+      <button hlmBtn variant="outline" size="sm" class="mt-3 w-fit" (click)="reload()">
+        Try again
+      </button>
+    </div>
+  } @else if (isLoading()) {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable aria-label="Posts, loading">
+        <tbody hlmTBody>
+          @for (row of skeletonRows; track row) {
+            <tr hlmTr>
+              <td hlmTd class="py-3">
+                <span hlmSkeleton class="h-4 w-48"></span>
+                <span hlmSkeleton class="mt-1.5 h-3 w-32"></span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="rounded-base border border-dashed border-border bg-card px-6 py-14 text-center">
+      @if (filtered()) {
+        <h2 class="text-base">No posts match</h2>
+        <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Try another filter, or
+          <a
+            [routerLink]="[]"
+            [queryParams]="{}"
+            class="font-medium text-primary underline underline-offset-4"
+            >see every post</a
+          >.
+        </p>
+      } @else {
+        <h2 class="text-base">No posts yet</h2>
+        <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Write your first post. It stays a draft until you publish it.
+        </p>
+        <a hlmBtn class="mt-4" [routerLink]="[newPostId]">
+          <ng-icon name="lucidePlus" aria-hidden="true" />
+          New post
+        </a>
+      }
+    </div>
+  } @else {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable aria-label="Posts">
+        <thead hlmTHead class="bg-muted/40">
+          <tr hlmTr>
+            <th hlmTh scope="col">Title</th>
+            <th hlmTh scope="col">Category</th>
+            <th hlmTh scope="col">Tags</th>
+            <th hlmTh scope="col">Status</th>
+            <th hlmTh scope="col">Updated</th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (row of rows(); track row.id) {
+            <tr hlmTr>
+              <!-- The link's ::after covers the whole cell, so a click anywhere in it opens the post. -->
+              <td hlmTd class="group/post relative min-w-48 max-w-md py-3 align-top whitespace-normal">
+                <a
+                  [routerLink]="[row.id]"
+                  queryParamsHandling="preserve"
+                  class="font-medium text-heading underline-offset-4 outline-none group-hover/post:underline after:absolute after:inset-0 focus-visible:underline focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+                >
+                  {{ row.title }}
+                </a>
+                <p class="mt-0.5 truncate font-mono text-xs text-muted-foreground">/{{ row.slug }}</p>
+              </td>
+              <td hlmTd class="py-3 align-top">
+                @if (row.category; as category) {
+                  {{ category.name }}
+                } @else {
+                  <span class="text-muted-foreground">None</span>
+                }
+              </td>
+              <td hlmTd class="py-3 align-top">
+                @if (row.tags.length > 0) {
+                  <span class="flex flex-wrap items-center gap-1">
+                    @for (tag of row.shownTags; track tag.id) {
+                      <span hlmBadge variant="neutral">{{ tag.name }}</span>
+                    }
+                    @if (row.moreTags > 0) {
+                      <span class="text-xs text-muted-foreground">+{{ row.moreTags }} more</span>
+                    }
+                  </span>
+                } @else {
+                  <span class="text-muted-foreground">None</span>
+                }
+              </td>
+              <td hlmTd class="py-3 align-top">
+                <span hlmBadge [variant]="row.status === 'published' ? 'success' : 'warning'">
+                  {{ statusLabel(row.status) }}
+                </span>
+              </td>
+              <td hlmTd class="py-3 align-top text-muted-foreground">
+                {{ row.updatedAt | date: 'MMM d, y, HH:mm' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (meta(); as meta) {
+      @if (meta.lastPage > 1) {
+        <nav aria-label="Pagination" class="flex items-center justify-between gap-4">
+          <p class="text-sm text-muted-foreground">Page {{ meta.page }} of {{ meta.lastPage }}</p>
+          <div class="flex gap-2">
+            @if (meta.page > 1) {
+              <a
+                hlmBtn
+                variant="outline"
+                size="sm"
+                [routerLink]="[]"
+                [queryParams]="{ page: meta.page - 1 }"
+                queryParamsHandling="merge"
+              >
+                <ng-icon name="lucideChevronLeft" aria-hidden="true" />
+                Previous
+              </a>
+            }
+            @if (meta.page < meta.lastPage) {
+              <a
+                hlmBtn
+                variant="outline"
+                size="sm"
+                [routerLink]="[]"
+                [queryParams]="{ page: meta.page + 1 }"
+                queryParamsHandling="merge"
+              >
+                Next
+                <ng-icon name="lucideChevronRight" aria-hidden="true" />
+              </a>
+            }
+          </div>
+        </nav>
+      }
+    }
+  }
+</div>

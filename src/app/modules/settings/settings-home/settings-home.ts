@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideBuilding2, lucideTableProperties } from '@ng-icons/lucide';
+import { lucideBuilding2, lucideFolder, lucideTableProperties, lucideTags } from '@ng-icons/lucide';
 import { HlmBadge } from '@ui/badge';
 
 /** One screen you can open from Settings, or one that is still to come. */
@@ -22,13 +22,14 @@ interface SettingsSection {
 
 /**
  * The way into everything under Settings, grouped the way the product is: what the
- * organization is, then what a lead holds. A screen that does not exist yet still gets a
- * card, marked Soon, so the shape of the product is on screen rather than only in a plan.
+ * organization is, how its blog is sorted, then what a lead holds. A screen that does not
+ * exist yet still gets a card, marked Soon, so the shape of the product is on screen rather
+ * than only in a plan.
  */
 @Component({
   selector: 'app-settings-home',
   imports: [RouterLink, NgIcon, HlmBadge],
-  providers: [provideIcons({ lucideBuilding2, lucideTableProperties })],
+  providers: [provideIcons({ lucideBuilding2, lucideFolder, lucideTableProperties, lucideTags })],
   templateUrl: './settings-home.html',
   host: { class: 'page-wide' },
 })
@@ -43,6 +44,24 @@ export class SettingsHome {
           description: 'Your organization name, website, and logo.',
           icon: 'lucideBuilding2',
           route: '/settings/organization',
+        },
+      ],
+    },
+    {
+      heading: 'Blog',
+      headingId: 'settings-blog',
+      entries: [
+        {
+          title: 'Categories',
+          description: 'Topics that group your posts. Each post has one at most.',
+          icon: 'lucideFolder',
+          route: '/settings/categories',
+        },
+        {
+          title: 'Tags',
+          description: 'Keywords that label your posts. A post can have many.',
+          icon: 'lucideTags',
+          route: '/settings/tags',
         },
       ],
     },

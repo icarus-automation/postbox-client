@@ -23,9 +23,9 @@ describe('Sidebar', () => {
     expect(nav?.getAttribute('aria-label')).toBe('Main');
   });
 
-  it('links to content, the leads inbox, and settings', () => {
+  it('links to the blog, the leads inbox, and settings', () => {
     expect(links().map((link) => [link.textContent?.trim(), link.getAttribute('href')])).toEqual([
-      ['Content', '/content'],
+      ['Blog', '/blog'],
       ['Leads', '/leads'],
       ['Settings', '/settings'],
     ]);

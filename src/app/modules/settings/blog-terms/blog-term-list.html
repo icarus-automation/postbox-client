@@ -1,0 +1,206 @@
+<div class="grid gap-5">
+  <a
+    routerLink="/settings"
+    class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:text-heading hover:underline"
+  >
+    <ng-icon name="lucideArrowLeft" aria-hidden="true" />
+    Back to settings
+  </a>
+
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-xl">{{ copy().title }}</h1>
+      <p class="mt-1 max-w-xl text-sm text-muted-foreground">{{ copy().intro }}</p>
+    </div>
+
+    @if (canManage() && list.hasValue()) {
+      <button hlmBtn type="button" (click)="startAdd()">
+        <ng-icon name="lucidePlus" aria-hidden="true" />
+        Add {{ copy().noun }}
+      </button>
+    }
+  </header>
+
+  @if (errorMessage(); as message) {
+    <div hlmAlert variant="destructive">
+      <p hlmAlertTitle>Could not load {{ copy().plural }}</p>
+      <p hlmAlertDescription>{{ message }}</p>
+      <button hlmBtn variant="outline" size="sm" class="mt-3 w-fit" (click)="list.reload()">
+        Try again
+      </button>
+    </div>
+  } @else if (list.isLoading()) {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable [attr.aria-label]="copy().title + ', loading'">
+        <tbody hlmTBody>
+          @for (row of skeletonRows; track row) {
+            <tr hlmTr>
+              <td hlmTd class="py-3">
+                <span hlmSkeleton class="h-4 w-40"></span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="rounded-base border border-dashed border-border bg-card px-6 py-14 text-center">
+      <h2 class="text-base">No {{ copy().plural }} yet</h2>
+      <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        Add one here, or type a new one on a post while you write.
+      </p>
+    </div>
+  } @else {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable [attr.aria-label]="copy().title">
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh scope="col">Name</th>
+            <th hlmTh scope="col">Link</th>
+            <th hlmTh scope="col">Posts</th>
+            @if (canManage()) {
+              <th hlmTh scope="col"><span class="sr-only">Actions</span></th>
+            }
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (row of rows(); track row.term.id) {
+            <tr hlmTr>
+              <th hlmTh scope="row" class="h-auto py-3 align-middle font-normal text-heading">{{ row.term.name }}</th>
+              <td hlmTd class="py-3 align-middle">
+                <code class="font-mono text-xs text-muted-foreground">{{ row.term.slug }}</code>
+              </td>
+              <td hlmTd class="py-3 align-middle">
+                @if (row.term.postCount > 0) {
+                  <!-- Opens the blog filtered to these posts, drafts included, as the count is. -->
+                  <a
+                    routerLink="/blog"
+                    [queryParams]="row.postsQuery"
+                    class="font-medium text-primary underline-offset-4 hover:underline"
+                    >{{ row.posts }}</a
+                  >
+                } @else {
+                  <span class="text-muted-foreground">No posts</span>
+                }
+              </td>
+              @if (canManage()) {
+                <td hlmTd class="py-3 text-end align-middle">
+                  <div class="flex justify-end gap-1">
+                    <button
+                      hlmBtn
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      [attr.aria-label]="'Rename ' + row.term.name"
+                      (click)="startRename(row.term)"
+                    >
+                      Rename
+                    </button>
+                    <button
+                      hlmBtn
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      [attr.aria-label]="'Delete ' + row.term.name"
+                      (click)="startDelete(row.term)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (!canManage()) {
+    <p class="text-sm text-muted-foreground">An owner or admin can add, rename and delete {{ copy().plural }} here.</p>
+  }
+</div>
+
+<hlm-dialog #nameDialog aria-labelledby="term-name-heading">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-md">
+    <form [formRoot]="nameForm" class="grid gap-6">
+      <div hlmDialogHeader>
+        <h2 id="term-name-heading" class="text-base leading-none font-medium">
+          @if (target(); as target) {
+            Rename {{ target.name }}
+          } @else {
+            Add {{ copy().noun }}
+          }
+        </h2>
+        <p class="text-sm text-muted-foreground">
+          @if (target()) {
+            Its link on your site changes with the name.
+          } @else {
+            You can pick it on any post.
+          }
+        </p>
+      </div>
+
+      @if (nameError(); as message) {
+        <div hlmAlert variant="destructive">
+          <p hlmAlertTitle>Not saved</p>
+          <p hlmAlertDescription>{{ message }}</p>
+        </div>
+      }
+
+      <div hlmField class="gap-1.5">
+        <label hlmFieldLabel for="term-name">Name</label>
+        <input hlmInput id="term-name" type="text" autocomplete="off" [formField]="nameForm.name" />
+        <p hlmFieldDescription class="text-xs">
+          @if (nameSlug(); as slug) {
+            Its link will be <span class="font-mono">{{ slug }}</span>.
+          } @else {
+            The link comes from the name.
+          }
+        </p>
+        <hlm-field-error>{{ nameForm.name().errors()[0]?.message }}</hlm-field-error>
+      </div>
+
+      <div hlmDialogFooter>
+        <button hlmBtn type="button" variant="outline" [disabled]="nameForm().submitting()" (click)="nameDialog.close()">
+          Cancel
+        </button>
+        <button hlmBtn type="submit" [disabled]="nameForm().submitting()">
+          @if (nameForm().submitting()) {
+            <hlm-spinner aria-label="Saving" />
+          }
+          {{ target() ? 'Rename' : 'Add' }}
+        </button>
+      </div>
+    </form>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Deleting never touches a post, and the dialog says what happens to the ones that used it. -->
+<hlm-dialog #deleteDialog aria-labelledby="term-delete-heading">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-md">
+    <div hlmDialogHeader>
+      <h2 id="term-delete-heading" class="text-base leading-none font-medium">Delete {{ target()?.name }}?</h2>
+      <p class="text-sm text-muted-foreground">{{ copy().afterDelete(target()?.postCount ?? 0) }}</p>
+    </div>
+
+    @if (deleteError(); as message) {
+      <div hlmAlert variant="destructive">
+        <p hlmAlertTitle>Not deleted</p>
+        <p hlmAlertDescription>{{ message }}</p>
+      </div>
+    }
+
+    <div hlmDialogFooter>
+      <button hlmBtn type="button" variant="outline" [disabled]="deleting()" (click)="deleteDialog.close()">
+        Cancel
+      </button>
+      <button hlmBtn type="button" variant="destructive" [disabled]="deleting()" (click)="confirmDelete()">
+        @if (deleting()) {
+          <hlm-spinner aria-label="Deleting" />
+        }
+        Delete {{ copy().noun }}
+      </button>
+    </div>
+  </hlm-dialog-content>
+</hlm-dialog>

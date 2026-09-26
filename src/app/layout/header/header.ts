@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideFileText, lucideLogOut, lucideSettings } from '@ng-icons/lucide';
+import { lucideLogOut, lucideNewspaper, lucideSettings } from '@ng-icons/lucide';
 import { Auth } from '@core/auth/auth';
 import { HlmButton } from '@ui/button';
 import { HlmDialogImports } from '@ui/dialog';
@@ -9,7 +9,7 @@ import { HlmDialogImports } from '@ui/dialog';
 @Component({
   selector: 'app-header',
   imports: [RouterLink, NgIcon, HlmButton, HlmDialogImports],
-  providers: [provideIcons({ lucideFileText, lucideLogOut, lucideSettings })],
+  providers: [provideIcons({ lucideLogOut, lucideNewspaper, lucideSettings })],
   templateUrl: './header.html',
   host: { class: 'sticky top-0 z-20' },
 })

@@ -21,6 +21,11 @@ Guidance for AI coding agents (Claude Code, Codex, etc.) working in this reposit
 - **Primary screens:** sign in, sign up, the leads inbox (filterable, paged list), lead
   detail (values, value edits, status and archive), Settings (the way into everything
   below it), and Lead fields (the field list and the Add field dialog).
+- **The blog:** marketers write posts here. The Blog list filters by status, category, tag
+  and title. The post editor holds the title, the link, the blocks, and a settings rail
+  with the category, tags, summary, images and search fields. Settings, Blog lists the
+  categories and tags with their post counts. Websites read published posts through the
+  public API in cms-api, never through this app.
 - **Not built yet:** no lead creation in the UI (machines do that over the API), no API
   key management screen, no Organization screen (Settings shows it as Soon), and no Google
   sign-in. Lead fields can only be listed and added here. Renaming, reordering, deleting and changing select options happen over the API.
@@ -68,7 +73,8 @@ sentence case headings, plain words, active voice.
 ## Current state of the repo
 
 Built so far: sign in, sign up, the leads inbox, lead detail with value edits and status
-changes, and the Lead fields settings screen. The inbox and detail take their columns,
+changes, the Lead fields settings screen, the Blog list and post editor, and the Categories
+and Tags settings screens. The inbox and detail take their columns,
 labels, order and value formats from the field definitions. The inbox opens on a short set
 of columns and lets a person pick the rest. The `welcome` smoke screen that shipped with
 the template is gone.
@@ -78,12 +84,14 @@ src/app/
   core/
     api/           # apiErrorMessage, credentials + 401 interceptors
     auth/          # Auth service (session signal), auth.types, authGuard/guestGuard
+    blog-terms/    # BlogTerms service, category and tag types, slugify. Used by blog and settings
     lead-fields/   # LeadFields service and field definition types, used by leads and settings
   layout/          # main-layout, header (account, sign out, phone link to Lead fields), sidebar
   modules/
     auth/          # auth-shell (centered card), login, sign-up. Rendered outside MainLayout
+    blog/          # post list, post editor with its draft and term pickers, blocks, services
     leads/         # list, detail, value display, status badge and picker, leads service
-    settings/      # the Settings index, and Lead fields: the field list and the add field dialog
+    settings/      # the Settings index, Lead fields, and the Categories and Tags screen
   shared/ui/       # vendored spartan helm components
 ```
 
@@ -268,6 +276,25 @@ Things worth knowing before changing them:
   back from the action as a submission error, which clears itself when the value changes.
   `LeadDetail` stays on Reactive Forms: its controls are built from the field definitions
   at runtime.
+- **A draft's link follows its title.** `PostDraft.setTitle` refills the slug until the
+  person types their own, and clearing the box hands it back to the title. The API makes
+  the same slug on save and numbers one that is taken, so the editor keeps a numbered slug
+  while the title still makes its base, and says why after the save that numbered it. A
+  published post keeps its link, and the editor warns that old links break when someone
+  changes it.
+- **A new post has no id until its first save.** `/blog/new` opens `PostEditor` on a blank
+  draft. The first save creates the post and replaces the URL with `/blog/:id`, which is the
+  same route, so the component and the draft stay on screen.
+- **Categories and tags are made where people write.** The pickers are spartan comboboxes.
+  A name that no category or tag has, in any case, shows as an Add option and is saved the
+  moment someone picks it. The tag picker tells the post about its tags only once every new
+  tag has an id.
+- **Leaving the editor with unsaved changes asks first.** The route guard in
+  `blog.routes.ts` waits on `PostEditor.canLeave`, which opens a dialog. Closing the tab
+  gets the browser's own prompt.
+- **Categories and Tags are one screen.** `/settings/categories` and `/settings/tags` load
+  `BlogTermList` with a `kind` from route data. Everyone sees the post counts, which link to
+  the Blog list filtered by that term. Owners and admins add, rename and delete.
 - **Restart `pnpm start` after the spartan CLI adds a component.** The CLI adds a
   `@ui/<name>` path alias to `tsconfig.json`. A dev server that was already running served
   components importing the new aliases uncompiled, and they failed with a JIT compiler

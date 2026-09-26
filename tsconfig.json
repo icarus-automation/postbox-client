@@ -67,6 +67,12 @@
       ],
       "@ui/sonner": [
         "./src/app/shared/ui/sonner/src/index.ts"
+      ],
+      "@ui/combobox": [
+        "./src/app/shared/ui/combobox/src/index.ts"
+      ],
+      "@ui/input-group": [
+        "./src/app/shared/ui/input-group/src/index.ts"
       ]
     },
     "target": "ES2022",

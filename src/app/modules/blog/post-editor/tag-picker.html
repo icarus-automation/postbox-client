@@ -1,0 +1,50 @@
+<label hlmLabel [for]="inputId">Tags</label>
+
+<hlm-combobox-multiple
+  [value]="value()"
+  [search]="search()"
+  [itemToString]="termName"
+  [isItemEqualToValue]="sameTerm"
+  autoHighlight
+  (searchChange)="search.set($event)"
+  (valueChange)="pick($event)"
+>
+  <hlm-combobox-chips class="w-full">
+    <ng-template hlmComboboxValues let-values>
+      @for (tag of values; track $index) {
+        <hlm-combobox-chip [value]="tag" [removeAriaLabel]="'Remove ' + tag.name">{{ tag.name }}</hlm-combobox-chip>
+      }
+    </ng-template>
+    <input hlmComboboxChipInput placeholder="Add a tag" [id]="inputId" />
+  </hlm-combobox-chips>
+
+  <hlm-combobox-content *hlmComboboxPortal>
+    <hlm-combobox-empty>
+      @if (search()) {
+        Use a letter or a number to add a tag.
+      } @else {
+        No tags yet. Type a name to add one.
+      }
+    </hlm-combobox-empty>
+    <div hlmComboboxList aria-label="Tags">
+      @for (tag of options(); track tag.id) {
+        <hlm-combobox-item [value]="tag">{{ tag.name }}</hlm-combobox-item>
+      }
+      @if (creator(); as creator) {
+        <hlm-combobox-item [value]="creator">Add "{{ creator.name }}"</hlm-combobox-item>
+      }
+    </div>
+  </hlm-combobox-content>
+</hlm-combobox-multiple>
+
+<p class="text-xs text-muted-foreground" role="status">
+  @if (adding()) {
+    Adding the tag.
+  } @else {
+    Add as many as you like. Backspace in the box removes the last one.
+  }
+</p>
+
+@if (error(); as message) {
+  <p class="text-xs text-destructive-ink" role="alert">{{ message }}</p>
+}
