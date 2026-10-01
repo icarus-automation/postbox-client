@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.example.com/api/v1',
+  apiBaseUrl: 'https://postbox-api.geoplanph.com/api/v1',
 };
