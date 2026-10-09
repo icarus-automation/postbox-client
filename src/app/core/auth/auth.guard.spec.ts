@@ -1,6 +1,7 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { credentialsInterceptor } from '@core/api/credentials-interceptor';
 import {
   Router,
   provideRouter,
@@ -53,7 +54,12 @@ describe('auth guards', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter([]),
+        // As in app.config, so the guard's session read goes out the way the app sends it.
+        provideHttpClient(withInterceptors([credentialsInterceptor])),
+        provideHttpClientTesting(),
+      ],
     });
 
     http = TestBed.inject(HttpTestingController);
@@ -61,6 +67,15 @@ describe('auth guards', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('reads the session with credentials, so the cookie reaches the API', async () => {
+    const pending = run(authGuard, '/leads');
+    const read = http.expectOne(ADMISSION_URL);
+    expect(read.request.withCredentials).toBe(true);
+    read.flush(ADMITTED);
+
+    expect(await pending).toBe(true);
+  });
 
   it('sends a signed-out visitor to login and remembers where they aimed', async () => {
     const pending = run(authGuard, '/leads/abc123');

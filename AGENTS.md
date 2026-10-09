@@ -106,6 +106,11 @@ Things worth knowing before changing them:
 - **Errors arrive in two shapes**: the Nest envelope (where `message` is a string or an
   array of validation strings) and Better Auth's own (`{ message, code }`). Use
   `apiErrorMessage()` rather than reading `error.error.message` by hand.
+- **Sign-up puts the API's refusals on the field they are about.** `fieldRefusal` in
+  `sign-up.ts` turns Better Auth's codes for a taken email and a short password into
+  submission errors under Email and Password, because its own wording ("User already
+  exists. Use another email.") does not say what to do next. Anything else goes to the
+  alert. A successful sign-up is signed in and opens `/create-organization`.
 - **Reading `value()` on a resource in an error state throws.** Go through `hasValue()`,
   the way `LeadList.rows` and `LeadDetail.value` do.
 - **List state lives in the query string.** `page`, `status` and `archived` arrive as signal inputs

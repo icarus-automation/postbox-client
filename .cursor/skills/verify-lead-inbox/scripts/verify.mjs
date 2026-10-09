@@ -81,7 +81,7 @@ Usage: node .cursor/skills/verify-lead-inbox/scripts/verify.mjs <command>
                   Lead Inbox already listening there. Never bind another port.
   doctor          Read-only check: app identity, cms-api health, CORS, and
                   whether this run owns the client process.
-  account-create  Rejects email sign-up, writes a password user with no
+  account-create  Signs a password user up over the API, checks it has no
                   organization, then creates that workspace. Writes
                   .run/account.json. Use this for inbox and detail proofs.
                   Do not use it for the account feature.
@@ -196,8 +196,11 @@ async function accountCreate() {
   };
   const slug = `verify-${stamp}`;
 
+  // Sign-up signs the new user in, so the jar holds the session from here on.
+  const jar = new Map();
   const signUp = await apiFetch('/auth/sign-up/email', {
     method: 'POST',
+    jar,
     origin: true,
     body: {
       name: account.name,
@@ -205,40 +208,8 @@ async function accountCreate() {
       password: account.password,
     },
   });
-  if (signUp.json?.code !== 'EMAIL_PASSWORD_SIGN_UP_DISABLED') {
-    fail(`email sign-up must be disabled, got ${signUp.status}: ${signUp.text}`);
-  }
-
-  const apiRoot = path.resolve(repoRoot, '../cms-api');
-  const provision = path.join(
-    apiRoot,
-    '.cursor/skills/verify-cms-api/scripts/provision-owner.mjs',
-  );
-  execFileSync(
-    process.execPath,
-    [
-      provision,
-      '--database',
-      'dev',
-      '--name',
-      account.name,
-      '--email',
-      account.email,
-      '--password',
-      account.password,
-    ],
-    { cwd: apiRoot, stdio: 'inherit' },
-  );
-
-  const jar = new Map();
-  const signIn = await apiFetch('/auth/sign-in/email', {
-    method: 'POST',
-    jar,
-    origin: true,
-    body: { email: account.email, password: account.password },
-  });
-  if (!signIn.ok) {
-    fail(`sign-in failed (${signIn.status}): ${signIn.text}`);
+  if (!signUp.ok) {
+    fail(`email sign-up failed (${signUp.status}): ${signUp.text}`);
   }
 
   const before = await apiFetch('/workspaces/admission', { method: 'GET', jar, origin: true });

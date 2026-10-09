@@ -138,7 +138,7 @@ All live in `.cursor/skills/verify-lead-inbox/scripts/verify.mjs`. Run them from
 | --- | --- |
 | `launch` | Adopt or start the client on 4200 after cms-api answers |
 | `doctor` | Identity, API health, CORS, session route |
-| `account-create` | Rejects email sign-up, writes a password user with no organization, then `POST /workspaces` |
+| `account-create` | Signs a password user up with `POST /auth/sign-up/email`, checks it has no organization, then `POST /workspaces` |
 | `seed-lead` | Mint an API key and `POST /leads` for that org |
 | `cleanup` | Kill only what launch started, keep evidence |
 

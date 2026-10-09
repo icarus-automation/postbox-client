@@ -1,10 +1,12 @@
 # Account
 
-Sign-up is Google only. Sign-in keeps email and password beside Continue with Google. A signed-in user with no organization lands on Create your organization and cannot open the app until that workspace exists. The shell then shows the organization name and logo.
+Sign-up offers Continue with Google and a name, email and password form. Sign-in keeps email and password beside Continue with Google. A new account and any signed-in user with no organization land on Create your organization and cannot open the app until that workspace exists. The shell then shows the organization name and logo.
 
 ## Sub-features
 
-- `signup-open` opens `/sign-up` with only Continue with Google.
+- `signup-open` opens `/sign-up` with Continue with Google above the Name, Email and Password fields.
+- `signup-save` creates the account, signs it in and opens `/create-organization`.
+- `signup-reject` keeps the person on the card and puts the reason under the field: a taken email under Email, a short password under Password.
 - `signin-open` opens the sign-in card from `/login` and from the sign-up footer.
 - `signin-save` signs in and opens `/leads`, or `/create-organization` when the user has no organization, or the `returnUrl` when it is a same-origin path and the user already has an organization.
 - `signin-reject` keeps the person on the card and shows `Sign in failed` for bad credentials.
@@ -25,14 +27,17 @@ Sign-up is Google only. Sign-in keeps email and password beside Continue with Go
 Preconditions:
 
 - Doctor is clean at `http://localhost:4200`.
-- cms-api is running and email sign-up is disabled.
+- cms-api is running.
 - The Cursor browser is signed out. If `/login` redirects to `/leads` or `/create-organization`, sign out first.
 - A verification email and password already exist from `account-create` when the step says to sign in. Do not type the everyday account.
 
 - **Open sign in.** Go to `/login`. Run `browser_navigate` with `url` `http://localhost:4200/login`. The heading is `Sign in to Lead Inbox`. `Continue with Google` is present. Email and Password fields are present.
-- **Footer to sign up.** Choose `Create one`. Run `browser_click` on the link named `Create one`. The heading becomes `Create account`. There is no email field and no password field.
+- **Footer to sign up.** Choose `Create one`. Run `browser_click` on the link named `Create one`. The heading becomes `Create account`. Name, Email and Password fields are present.
 - **Footer back to sign in.** Choose `Sign in`. Run `browser_click` on the link named `Sign in`. The heading is `Sign in to Lead Inbox` again.
-- **Open sign up.** Go to `/sign-up`. Run `browser_navigate` with `url` `http://localhost:4200/sign-up`. The only button is `Continue with Google`.
+- **Open sign up.** Go to `/sign-up`. Run `browser_navigate` with `url` `http://localhost:4200/sign-up`. `Continue with Google` and `Create account` are present.
+- **Taken email.** On `/sign-up`, fill a name, the verification email from `account-create` and an 8 character password. Run `browser_fill` then `browser_click` on `Create account`. `This email already has an account. Sign in instead.` shows under Email and the heading stays `Create account`.
+- **Short password.** Fill a new email and `short` as the password, then leave the field. `Use at least 8 characters.` shows under Password and no request goes out.
+- **Sign up.** Fill a name, a new `verify.<anything>@lead-inbox.test` email and an 8 character password. Run `browser_fill` then `browser_click` on `Create account`. The heading becomes `Let's create your organization.` Choose the `Sign in` button under the form, which signs this account out and opens `/login`, before the next step.
 - **Bad password.** On `/login`, fill the verification email and `wrong-password`. Run `browser_fill` then `browser_click` on `Sign in`. An alert titled `Sign in failed` stays on the card. The heading does not become `Leads`.
 - **Sign in.** Fill the verification email and password from `account-create`. Run `browser_fill` then `browser_click` on `Sign in`. The heading is `Leads`. The header brand is the organization name.
 - **Return URL.** Sign out. Open `http://localhost:4200/settings/lead-fields`. Sign in. Run `browser_navigate` to that path, then sign in. The heading is `Lead fields`, not `Leads`.

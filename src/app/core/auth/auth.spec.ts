@@ -1,11 +1,13 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { credentialsInterceptor } from '@core/api/credentials-interceptor';
 import { environment } from '@env/environment';
 import { Auth } from './auth';
 import type { Admission } from './auth.types';
 
 const ADMISSION_URL = `${environment.apiBaseUrl}/workspaces/admission`;
+const AUTH_URL = `${environment.apiBaseUrl}/auth`;
 
 const ADMITTED: Admission = {
   phase: 'admitted',
@@ -22,6 +24,13 @@ const ADMITTED: Admission = {
   },
 };
 
+const ONBOARDING: Admission = {
+  phase: 'onboarding',
+  user: { id: 'user-2', name: 'Ada Lovelace', email: 'ada@local.test' },
+  password: 'sealed',
+  workspaceUrlPrefix: 'handshakes.cards/',
+};
+
 const SIGNED_OUT: Admission = { phase: 'signed-out' };
 
 describe('Auth', () => {
@@ -30,7 +39,12 @@ describe('Auth', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      // The credentials interceptor runs as it does in app.config, so these tests also
+      // see whether the session cookie travels.
+      providers: [
+        provideHttpClient(withInterceptors([credentialsInterceptor])),
+        provideHttpClientTesting(),
+      ],
     });
 
     auth = TestBed.inject(Auth);
@@ -94,6 +108,53 @@ describe('Auth', () => {
 
     expect(await pending).toEqual(ADMITTED);
     expect(auth.workspace()?.id).toBe('org-1');
+  });
+
+  it('signs up, then reads admission for the new account', async () => {
+    const pending = auth.signUp('Ada Lovelace', 'ada@local.test', 'correct-horse');
+
+    const signUp = http.expectOne(`${AUTH_URL}/sign-up/email`);
+    expect(signUp.request.method).toBe('POST');
+    expect(signUp.request.body).toEqual({
+      name: 'Ada Lovelace',
+      email: 'ada@local.test',
+      password: 'correct-horse',
+    });
+    signUp.flush({ token: 'tok-2', user: ONBOARDING.user });
+
+    const admission = await vi.waitFor(() => http.expectOne(ADMISSION_URL));
+    admission.flush(ONBOARDING);
+
+    expect(await pending).toEqual(ONBOARDING);
+    expect(auth.isSignedIn()).toBe(true);
+    expect(auth.workspace()).toBeNull();
+  });
+
+  it('sends the session cookie with every auth and session request', async () => {
+    /** Answers one request after checking it opted in to credentials. */
+    async function answer(url: string, body: object): Promise<void> {
+      const request = await vi.waitFor(() => http.expectOne(url));
+      expect(request.request.withCredentials).toBe(true);
+      request.flush(body);
+    }
+
+    const restored = auth.restore();
+    await answer(ADMISSION_URL, SIGNED_OUT);
+    await restored;
+
+    const signedUp = auth.signUp('Ada Lovelace', 'ada@local.test', 'correct-horse');
+    await answer(`${AUTH_URL}/sign-up/email`, { token: 'tok-2' });
+    await answer(ADMISSION_URL, ONBOARDING);
+    await signedUp;
+
+    const signedOut = auth.signOut();
+    await answer(`${AUTH_URL}/sign-out`, { success: true });
+    await signedOut;
+
+    const signedIn = auth.signIn('owner@local.test', 'password123');
+    await answer(`${AUTH_URL}/sign-in/email`, { token: 'tok-1' });
+    await answer(ADMISSION_URL, ADMITTED);
+    await signedIn;
   });
 
   it('clears admission even when sign-out fails', async () => {

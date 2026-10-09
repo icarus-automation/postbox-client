@@ -53,6 +53,12 @@ export class Auth {
     return this.read();
   }
 
+  /** The API signs a new account in, so this reads admission straight after. */
+  async signUp(name: string, email: string, password: string): Promise<Admission> {
+    await firstValueFrom(this.http.post(`${this.base}/sign-up/email`, { name, email, password }));
+    return this.read();
+  }
+
   async signOut(): Promise<void> {
     try {
       await firstValueFrom(this.http.post(`${this.base}/sign-out`, {}));
