@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { editorGuard } from '@core/auth/auth.guard';
 
 export const routes: Routes = [
   {
@@ -29,5 +30,20 @@ export const routes: Routes = [
     title: 'Organization | Lead Inbox',
     loadComponent: () =>
       import('./organization/organization-settings').then((m) => m.OrganizationSettings),
+  },
+  {
+    // The key and the admin keys are for owners and admins, and the API refuses a member.
+    path: 'integration-key',
+    title: 'Integration key | Lead Inbox',
+    canActivate: [editorGuard],
+    loadComponent: () =>
+      import('./integration-key/integration-key-settings').then((m) => m.IntegrationKeySettings),
+  },
+  {
+    path: 'api-keys',
+    title: 'Admin API keys | Lead Inbox',
+    canActivate: [editorGuard],
+    loadComponent: () =>
+      import('./api-keys/api-keys-settings').then((m) => m.ApiKeysSettings),
   },
 ];

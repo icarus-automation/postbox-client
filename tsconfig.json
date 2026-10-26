@@ -73,6 +73,9 @@
       ],
       "@ui/input-group": [
         "./src/app/shared/ui/input-group/src/index.ts"
+      ],
+      "@ui/copy-button": [
+        "./src/app/shared/ui/copy-button/copy-button.ts"
       ]
     },
     "target": "ES2022",

@@ -10,8 +10,8 @@ import {
   type UrlTree,
 } from '@angular/router';
 import { environment } from '@env/environment';
-import type { Admission } from './auth.types';
-import { authGuard, guestGuard, onboardingGuard } from './auth.guard';
+import type { Admission, MemberRole } from './auth.types';
+import { authGuard, editorGuard, guestGuard, onboardingGuard } from './auth.guard';
 
 const ADMISSION_URL = `${environment.apiBaseUrl}/workspaces/admission`;
 
@@ -131,5 +131,45 @@ describe('auth guards', () => {
     const pending = run(onboardingGuard, '/create-organization');
     http.expectOne(ADMISSION_URL).flush(ADMITTED);
     expect(router.serializeUrl((await pending) as UrlTree)).toBe('/leads');
+  });
+
+  describe('editorGuard', () => {
+    function admittedAs(role: MemberRole): Admission {
+      return {
+        phase: 'admitted',
+        user: { id: 'u', name: 'Ace Owner', email: 'owner@local.test' },
+        password: 'sealed',
+        workspaceUrlPrefix: 'handshakes.cards/',
+        workspace: { id: 'o', name: 'Acme Inc', slug: 'acme-inc', website: null, logoUrl: null, role },
+      };
+    }
+
+    it('lets an owner through', async () => {
+      const owner = run(editorGuard, '/developers');
+      http.expectOne(ADMISSION_URL).flush(admittedAs('owner'));
+      expect(await owner).toBe(true);
+    });
+
+    it('lets an admin through, on the read the owner already made', async () => {
+      const first = run(editorGuard, '/developers');
+      http.expectOne(ADMISSION_URL).flush(admittedAs('admin'));
+      expect(await first).toBe(true);
+
+      expect(await run(editorGuard, '/settings/api-keys')).toBe(true);
+    });
+
+    it('sends a member back to the inbox', async () => {
+      const pending = run(editorGuard, '/developers');
+      http.expectOne(ADMISSION_URL).flush(admittedAs('member'));
+
+      expect(router.serializeUrl((await pending) as UrlTree)).toBe('/leads');
+    });
+
+    it('sends anyone who is not admitted to the inbox, where the shell guard takes over', async () => {
+      const pending = run(editorGuard, '/developers');
+      http.expectOne(ADMISSION_URL).flush(SIGNED_OUT);
+
+      expect(router.serializeUrl((await pending) as UrlTree)).toBe('/leads');
+    });
   });
 });

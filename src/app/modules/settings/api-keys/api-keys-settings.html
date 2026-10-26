@@ -1,0 +1,207 @@
+<div class="grid gap-5">
+  <a
+    routerLink="/settings"
+    class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:text-heading hover:underline"
+  >
+    <ng-icon name="lucideArrowLeft" aria-hidden="true" />
+    Back to settings
+  </a>
+
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="flex flex-wrap items-center gap-2 text-xl">
+        Admin API keys
+        <span hlmBadge variant="warning">Server-only</span>
+      </h1>
+      <p class="mt-1 max-w-xl text-sm text-muted-foreground">
+        For agents, scripts and servers that file drafts and read leads. Never put one in website code or send one from a browser. Your website uses the
+        <a routerLink="/settings/integration-key" class="text-primary underline underline-offset-4 hover:no-underline">integration key</a>
+        instead.
+      </p>
+    </div>
+
+    @if (list.hasValue()) {
+      <button hlmBtn type="button" (click)="startCreate()">
+        <ng-icon name="lucidePlus" aria-hidden="true" />
+        Create key
+      </button>
+    }
+  </header>
+
+  @if (errorMessage(); as message) {
+    <div hlmAlert variant="destructive">
+      <p hlmAlertTitle>Could not load the admin API keys</p>
+      <p hlmAlertDescription>{{ message }}</p>
+      <button hlmBtn variant="outline" size="sm" class="mt-3 w-fit" type="button" (click)="list.reload()">
+        Try again
+      </button>
+    </div>
+  } @else if (list.isLoading()) {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable aria-label="Admin API keys, loading">
+        <tbody hlmTBody>
+          @for (row of skeletonRows; track row) {
+            <tr hlmTr>
+              <td hlmTd class="py-3">
+                <span hlmSkeleton class="h-4 w-48"></span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="rounded-base border border-dashed border-border bg-card px-6 py-14 text-center">
+      <h2 class="text-base">No admin API keys yet</h2>
+      <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        Make one when an agent or script needs to file drafts or read leads.
+      </p>
+    </div>
+  } @else {
+    <div hlmTableContainer class="rounded-base border border-border bg-card">
+      <table hlmTable aria-label="Admin API keys">
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh scope="col">Name</th>
+            <th hlmTh scope="col">Key</th>
+            <th hlmTh scope="col">Created</th>
+            <th hlmTh scope="col">Last used</th>
+            <th hlmTh scope="col">Status</th>
+            <th hlmTh scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (key of rows(); track key.id) {
+            <tr hlmTr>
+              <th hlmTh scope="row" class="h-auto py-3 align-middle font-normal text-heading">{{ key.name }}</th>
+              <td hlmTd class="py-3 align-middle">
+                @if (key.keyPrefix; as prefix) {
+                  <code class="font-mono text-xs text-muted-foreground">{{ prefix }}&hellip;</code>
+                }
+              </td>
+              <td hlmTd class="py-3 align-middle">{{ key.createdAt | date: 'MMM d, y, HH:mm' }}</td>
+              <td hlmTd class="py-3 align-middle text-muted-foreground">
+                @if (key.lastUsedAt; as lastUsed) {
+                  {{ lastUsed | date: 'MMM d, y, HH:mm' }}
+                } @else {
+                  Never
+                }
+              </td>
+              <td hlmTd class="py-3 align-middle">
+                @if (key.revokedAt) {
+                  <span hlmBadge variant="neutral">Revoked</span>
+                } @else {
+                  <span hlmBadge variant="success">Active</span>
+                }
+              </td>
+              <td hlmTd class="py-3 text-end align-middle">
+                @if (!key.revokedAt) {
+                  <button
+                    hlmBtn
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    [attr.aria-label]="'Revoke ' + key.name"
+                    (click)="startRevoke(key)"
+                  >
+                    Revoke
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Bound, not a plain attribute: the attribute would stay on this custom element, where it has no role to label. -->
+<hlm-dialog #createDialog [aria-labelledby]="'api-key-create-heading'" (closed)="created.set(null)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-md">
+    @if (created(); as made) {
+      <div class="grid gap-4">
+        <div hlmDialogHeader>
+          <h2 id="api-key-create-heading" class="text-base leading-none font-medium">Key created</h2>
+          <p class="text-sm text-muted-foreground">
+            Copy it now and keep it on a server. This is the only time it is shown.
+          </p>
+        </div>
+
+        <div class="grid gap-2">
+          <span class="field-label">{{ made.name }}</span>
+          <code class="rounded-base border border-border bg-muted p-3 font-mono text-xs break-all text-heading">{{ made.key }}</code>
+        </div>
+
+        <div hlmDialogFooter>
+          <app-copy-button [value]="made.key" label="Copy admin API key" confirmation="Admin API key copied" />
+          <button hlmBtn type="button" (click)="createDialog.close()">Done</button>
+        </div>
+      </div>
+    } @else {
+      <form [formRoot]="nameForm" class="grid gap-6">
+        <div hlmDialogHeader>
+          <h2 id="api-key-create-heading" class="text-base leading-none font-medium">Create an admin API key</h2>
+          <p class="text-sm text-muted-foreground">
+            Name it for what will use it, such as the agent or the script. The key can create drafts and read leads, so keep it on a server.
+          </p>
+        </div>
+
+        @if (createError(); as message) {
+          <div hlmAlert variant="destructive">
+            <p hlmAlertTitle>Not created</p>
+            <p hlmAlertDescription>{{ message }}</p>
+          </div>
+        }
+
+        <div hlmField class="gap-1.5">
+          <label hlmFieldLabel for="api-key-name">Name</label>
+          <input hlmInput id="api-key-name" type="text" autocomplete="off" [formField]="nameForm.name" />
+          <hlm-field-error>{{ nameForm.name().errors()[0]?.message }}</hlm-field-error>
+        </div>
+
+        <div hlmDialogFooter>
+          <button hlmBtn type="button" variant="outline" [disabled]="nameForm().submitting()" (click)="createDialog.close()">
+            Cancel
+          </button>
+          <button hlmBtn type="submit" [disabled]="nameForm().submitting()">
+            @if (nameForm().submitting()) {
+              <hlm-spinner aria-label="Creating" />
+            }
+            Create key
+          </button>
+        </div>
+      </form>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<hlm-dialog #revokeDialog [aria-labelledby]="'api-key-revoke-heading'">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-md">
+    <div hlmDialogHeader>
+      <h2 id="api-key-revoke-heading" class="text-base leading-none font-medium">Revoke {{ target()?.name }}?</h2>
+      <p class="text-sm text-muted-foreground">
+        Anything that uses this key stops working right away. You cannot undo this. Make a new key if something still needs access.
+      </p>
+    </div>
+
+    @if (revokeError(); as message) {
+      <div hlmAlert variant="destructive">
+        <p hlmAlertTitle>Not revoked</p>
+        <p hlmAlertDescription>{{ message }}</p>
+      </div>
+    }
+
+    <div hlmDialogFooter>
+      <button hlmBtn type="button" variant="outline" [disabled]="revoking()" (click)="revokeDialog.close()">
+        Cancel
+      </button>
+      <button hlmBtn type="button" variant="destructive" [disabled]="revoking()" (click)="confirmRevoke()">
+        @if (revoking()) {
+          <hlm-spinner aria-label="Revoking" />
+        }
+        Revoke key
+      </button>
+    </div>
+  </hlm-dialog-content>
+</hlm-dialog>

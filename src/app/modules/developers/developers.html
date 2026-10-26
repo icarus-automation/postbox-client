@@ -1,0 +1,127 @@
+<div class="grid gap-8">
+  <header>
+    <h1 class="text-xl">Developers</h1>
+    <p class="mt-1 max-w-xl text-sm text-muted-foreground">
+      Connect your website to Postbox. Give the prompt below to an AI coding agent, or use the reference to wire it up yourself.
+    </p>
+  </header>
+
+  <section aria-labelledby="developers-connection" class="grid gap-3">
+    <h2 id="developers-connection" class="text-base">Connection</h2>
+
+    @if (errorMessage(); as message) {
+      <div hlmAlert variant="destructive">
+        <p hlmAlertTitle>Could not load the integration key</p>
+        <p hlmAlertDescription>{{ message }}</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button hlmBtn variant="outline" size="sm" type="button" (click)="key.reload()">Try again</button>
+          <a hlmBtn variant="outline" size="sm" routerLink="/settings/integration-key">Open integration key settings</a>
+        </div>
+      </div>
+    } @else {
+      <dl class="divide-y divide-border rounded-base border border-border bg-card">
+        <div class="grid gap-1 p-4 sm:grid-cols-[11rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
+          <dt class="field-label">Integration key</dt>
+          <dd class="min-w-0 text-sm">
+            @if (key.hasValue()) {
+              <code class="font-mono break-all text-heading">{{ key.value().key }}</code>
+            } @else {
+              <span role="status" class="block">
+                <span class="sr-only">Loading the integration key</span>
+                <span hlmSkeleton class="block h-4 w-64 max-w-full" aria-hidden="true"></span>
+              </span>
+            }
+          </dd>
+          <dd>
+            @if (key.hasValue()) {
+              <app-copy-button
+                [value]="key.value().key"
+                label="Copy integration key"
+                confirmation="Integration key copied"
+              />
+            }
+          </dd>
+        </div>
+
+        <div class="grid gap-1 p-4 sm:grid-cols-[11rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
+          <dt class="field-label">API base URL</dt>
+          <dd class="min-w-0 text-sm"><code class="font-mono break-all text-heading">{{ apiBaseUrl }}</code></dd>
+          <dd><app-copy-button [value]="apiBaseUrl" label="Copy API base URL" confirmation="API base URL copied" /></dd>
+        </div>
+
+        <div class="grid gap-1 p-4 sm:grid-cols-[11rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
+          <dt class="field-label">Organization slug</dt>
+          <dd class="min-w-0 text-sm"><code class="font-mono break-all text-heading">{{ slug() }}</code></dd>
+          <dd><app-copy-button [value]="slug()" label="Copy organization slug" confirmation="Organization slug copied" /></dd>
+        </div>
+      </dl>
+    }
+
+    <p class="max-w-2xl text-sm text-muted-foreground">
+      The integration key reads published posts and sends leads, and nothing else, so it is safe in website code. To replace it,
+      <a
+        routerLink="/settings/integration-key"
+        class="text-primary underline underline-offset-4 hover:no-underline"
+        >rotate it in Settings</a
+      >.
+    </p>
+  </section>
+
+  <section aria-labelledby="developers-prompt" class="grid gap-3">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 id="developers-prompt" class="text-base">Paste this to your AI agent</h2>
+      <app-copy-button [value]="prompt()" label="Copy agent prompt" confirmation="Agent prompt copied" />
+    </div>
+    <!-- A group, not a region: the section around it is the landmark, and a second one with the same name would repeat it. -->
+    <pre
+      tabindex="0"
+      role="group"
+      aria-label="Agent prompt"
+      class="overflow-x-auto rounded-base border border-border bg-muted p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-heading"
+    ><code>{{ prompt() }}</code></pre>
+    <p class="max-w-2xl text-sm text-muted-foreground">
+      It points the agent at the full guide. Add the integration key to the site's environment as
+      <code class="font-mono text-xs text-heading">POSTBOX_INTEGRATION_KEY</code>.
+    </p>
+  </section>
+
+  <section aria-labelledby="developers-reference" class="grid gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 id="developers-reference" class="text-base">Quick reference</h2>
+      <a
+        [href]="guideUrl"
+        target="_blank"
+        rel="noopener"
+        hlmBtn
+        variant="outline"
+        size="sm"
+      >
+        Read the full guide
+        <ng-icon name="lucideExternalLink" aria-hidden="true" />
+        <span class="sr-only">(opens in a new tab)</span>
+      </a>
+    </div>
+
+    <ul class="grid gap-4">
+      @for (item of reference(); track item.id) {
+        <li class="grid gap-2 rounded-base border border-border bg-card p-4">
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <h3 class="text-sm">{{ item.title }}</h3>
+            <app-copy-button
+              [value]="item.example"
+              [label]="'Copy example: ' + item.title"
+              [confirmation]="item.title + ' example copied'"
+            />
+          </div>
+          <p class="max-w-2xl text-sm text-muted-foreground">{{ item.description }}</p>
+          <pre
+            tabindex="0"
+            role="group"
+            [attr.aria-label]="'Example: ' + item.title"
+            class="overflow-x-auto rounded-base bg-muted p-3 font-mono text-xs leading-relaxed text-heading"
+          ><code>{{ item.example }}</code></pre>
+        </li>
+      }
+    </ul>
+  </section>
+</div>

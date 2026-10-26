@@ -35,6 +35,11 @@ const ONBOARDING = {
 
 const SIGNED_OUT = { phase: 'signed-out' as const };
 
+const MEMBER = { ...ADMITTED, workspace: { ...ADMITTED.workspace, role: 'member' as const } };
+
+const KEY_URL = `${environment.apiBaseUrl}/integration-key`;
+const API_KEYS_URL = `${environment.apiBaseUrl}/api-keys`;
+
 describe('app routes', () => {
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
@@ -44,7 +49,10 @@ describe('app routes', () => {
    * for stability, because a page that loads data holds the app unstable until the
    * test answers that request too.
    */
-  async function visit(url: string, admission: typeof ADMITTED | typeof ONBOARDING | typeof SIGNED_OUT): Promise<HTMLElement> {
+  async function visit(
+    url: string,
+    admission: typeof ADMITTED | typeof MEMBER | typeof ONBOARDING | typeof SIGNED_OUT,
+  ): Promise<HTMLElement> {
     const navigation = harness.navigateByUrl(url);
     const read = await vi.waitFor(() => http.expectOne(ADMISSION_URL));
     read.flush(admission);
@@ -131,6 +139,55 @@ describe('app routes', () => {
     expect(el.querySelector('app-main-layout')).toBeNull();
     expect(el.querySelector('app-create-organization')).toBeTruthy();
     http.expectNone(LEADS_URL);
+  });
+
+  it('opens Developers inside the app chrome for an owner, and reads the key', async () => {
+    const el = await visit('/developers', ADMITTED);
+
+    const key = await vi.waitFor(() => http.expectOne(KEY_URL));
+    key.flush({ key: 'pbi_live' });
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/developers');
+    expect(el.querySelector('app-main-layout app-developers')).toBeTruthy();
+    expect(el.querySelector('app-sidebar a[href="/developers"]')).toBeTruthy();
+  });
+
+  it('sends a member from Developers back to the inbox, without reading the key', async () => {
+    const el = await visit('/developers', MEMBER);
+
+    expect(TestBed.inject(Router).url).toBe('/leads');
+    expect(el.querySelector('app-developers')).toBeNull();
+    http.expectNone(KEY_URL);
+  });
+
+  it('sends a signed-out visitor from Developers to sign in, without reading the key', async () => {
+    await visit('/developers', SIGNED_OUT);
+
+    expect(TestBed.inject(Router).url).toBe('/login?returnUrl=%2Fdevelopers');
+    http.expectNone(KEY_URL);
+  });
+
+  it('opens the integration key and the admin API keys for an owner', async () => {
+    const key = await visit('/settings/integration-key', ADMITTED);
+    (await vi.waitFor(() => http.expectOne(KEY_URL))).flush({ key: 'pbi_live' });
+    await harness.fixture.whenStable();
+    expect(key.querySelector('app-main-layout app-integration-key-settings')).toBeTruthy();
+
+    await harness.navigateByUrl('/settings/api-keys');
+    (await vi.waitFor(() => http.expectOne(API_KEYS_URL))).flush([]);
+    await harness.fixture.whenStable();
+    expect(key.querySelector('app-main-layout app-api-keys-settings')).toBeTruthy();
+  });
+
+  it('sends a member from the integration key and the admin API keys back to the inbox', async () => {
+    await visit('/settings/integration-key', MEMBER);
+    expect(TestBed.inject(Router).url).toBe('/leads');
+
+    await harness.navigateByUrl('/settings/api-keys');
+    expect(TestBed.inject(Router).url).toBe('/leads');
+    http.expectNone(KEY_URL);
+    http.expectNone(API_KEYS_URL);
   });
 
   it('opens lead fields inside the app chrome for a signed-in visitor', async () => {

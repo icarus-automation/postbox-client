@@ -8,8 +8,13 @@ fields settings screen. On lead detail a person copies the suggested first messa
 values and sets the status. The inbox and detail take their fields from the organization's
 lead fields: the table opens on the short ones and a Columns menu adds the rest, while long
 text and links stay on the lead. The settings screen lists those fields and adds custom
-ones in a dialog. There is no lead creation, API key management or Google sign-in in the UI
-yet.
+ones in a dialog. There is no lead creation or Google sign-in in the UI yet.
+
+To connect a website, owners and admins open Developers. It shows the organization's
+integration key, a short prompt to paste to an AI coding agent, and a quick reference, and it
+links to the full integration guide that cms-api serves at `/api/v1/docs/integration.md`.
+Settings copies and rotates the integration key, and lists the server-only admin API keys
+under Advanced.
 
 The API contract is in two docs. [docs/fe-phase1-api.md](docs/fe-phase1-api.md) covers
 sessions and API keys, and [docs/fe-lead-fields-api.md](docs/fe-lead-fields-api.md) covers
@@ -31,8 +36,9 @@ Open `http://localhost:4200`. Signed-out visitors land on the sign in screen, wh
 to `/sign-up` for a new account. The account comes with its own organization and an
 empty inbox.
 
-Leads come from `POST /api/v1/leads` with an `x-api-key` header, minted with
-`POST /api/v1/api-keys` from a signed-in session. A lead's `values` must match the
+Leads come from `POST /api/v1/leads` with an `x-api-key` header, made under Settings,
+Advanced (or with `POST /api/v1/api-keys` from a signed-in session). A website files them
+with its integration key instead, at `POST /api/v1/public/:orgSlug/leads`. A lead's `values` must match the
 organization's lead fields, which `GET /api/v1/leads/fields` lists. Scripts that call the
 `/auth` routes must send an `Origin` header, because Better Auth rejects browser-shaped
 requests without one. The contract docs have the full shapes.
@@ -42,7 +48,7 @@ requests without one. The contract docs have the full shapes.
 
 ## What's wired up
 
-- `src/app/core/auth/`: session service and route guards. `src/app/core/lead-fields/`: the field definitions service. `src/app/modules/`: `auth` (sign in and sign up in one centered card shell), `leads` (inbox and detail) and `settings` (Lead fields)
+- `src/app/core/auth/`: session service and route guards. `src/app/core/lead-fields/`: the field definitions service. `src/app/modules/`: `auth` (sign in and sign up in one centered card shell), `leads` (inbox and detail), `developers` (the Developers page) and `settings` (Lead fields, Categories and Tags, Integration key, Admin API keys)
 - `src/app/layout/`: header, sidebar, and `MainLayout`, already routed. `MainLayout` provides the skip link, the `<main>` landmark, and the `shell-gutter` padding, so pages do not repeat them. Each page picks `page-wide` or `page-standard` on its host
 - `src/app/app.config.ts`: router with `withComponentInputBinding()` (route params arrive as signal `input()`s) and `withInMemoryScrolling()`, plus `provideHttpClient(withFetch())` with a credentials interceptor (sends the session cookie) and a 401 interceptor (sends a stale session back to sign in)
 - `src/styles.css`: brand tokens, Tailwind v4 `@theme inline` mapping, and the spartan preset. Light scheme only
@@ -58,7 +64,8 @@ pnpm start    # dev server
 pnpm build    # production build
 pnpm watch    # dev build, watch mode
 pnpm test     # vitest
-pnpm verify   # build + test, the gate before calling work done
+pnpm lint     # eslint, no warnings allowed
+pnpm verify   # build + lint + test, the gate before calling work done
 ```
 
 ## Adding UI components

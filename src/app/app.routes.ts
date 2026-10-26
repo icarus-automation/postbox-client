@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, onboardingGuard } from '@core/auth/auth.guard';
+import { authGuard, editorGuard, guestGuard, onboardingGuard } from '@core/auth/auth.guard';
 import { MainLayout } from './layout/main-layout/main-layout';
 
 export const routes: Routes = [
@@ -25,6 +25,11 @@ export const routes: Routes = [
       {
         path: 'leads',
         loadChildren: () => import('./modules/leads/leads.routes').then((m) => m.routes),
+      },
+      {
+        path: 'developers',
+        canActivate: [editorGuard],
+        loadChildren: () => import('./modules/developers/developers.routes').then((m) => m.routes),
       },
       {
         path: 'settings',

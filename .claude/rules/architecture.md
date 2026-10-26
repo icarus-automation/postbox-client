@@ -18,10 +18,12 @@ src/app/
 `src/app/modules/` holds `auth` (the centered `auth-shell` card, sign in and sign up),
 `leads` (inbox list, detail, value display, status badge, status picker, and
 a feature-scoped `services/leads.ts`) and `settings` (the Lead fields list and its add
-field form, at `/settings/lead-fields`, and the Categories and Tags screen). `blog` holds
-the post list and the post editor. The field definitions service is in
-`core/lead-fields/`, because both `leads` and `settings` use it, and the category and tag
-service is in `core/blog-terms/` for the same reason. Copy the shape of `leads`
+field form, at `/settings/lead-fields`, the Categories and Tags screen, and the Integration
+key and Admin API keys screens). `blog` holds the post list and the post editor.
+`developers` holds the Developers page, for owners and admins. The field definitions service
+is in `core/lead-fields/`, because both `leads` and `settings` use it, and the category and
+tag service is in `core/blog-terms/` for the same reason. The integration key service is in
+`core/integration-key/`, because `developers` and `settings` both use it. Copy the shape of `leads`
 when adding a feature: a routes file, one folder per screen, types beside the routes file,
 and services under `services/`.
 

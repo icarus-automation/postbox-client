@@ -65,6 +65,42 @@ describe('Auth', () => {
     expect(await auth.restore()).toEqual(ADMITTED);
   });
 
+  describe('isEditor', () => {
+    async function restoreAs(role: 'owner' | 'admin' | 'member'): Promise<void> {
+      const pending = auth.restore();
+      http.expectOne(ADMISSION_URL).flush({
+        ...ADMITTED,
+        workspace: { ...(ADMITTED as Extract<Admission, { phase: 'admitted' }>).workspace, role },
+      });
+      await pending;
+    }
+
+    it('is true for an owner', async () => {
+      await restoreAs('owner');
+      expect(auth.isEditor()).toBe(true);
+    });
+
+    it('is true for an admin', async () => {
+      await restoreAs('admin');
+      expect(auth.isEditor()).toBe(true);
+    });
+
+    it('is false for a member', async () => {
+      await restoreAs('member');
+      expect(auth.isEditor()).toBe(false);
+    });
+
+    it('is false before anyone is admitted, and while onboarding', async () => {
+      expect(auth.isEditor()).toBe(false);
+
+      const pending = auth.restore();
+      http.expectOne(ADMISSION_URL).flush(ONBOARDING);
+      await pending;
+
+      expect(auth.isEditor()).toBe(false);
+    });
+  });
+
   it('treats a signed-out body as signed out', async () => {
     const pending = auth.restore();
     http.expectOne(ADMISSION_URL).flush(SIGNED_OUT);

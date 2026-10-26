@@ -1,10 +1,10 @@
 <div class="grid gap-8">
   <header>
     <h1 class="text-xl">Settings</h1>
-    <p class="mt-1 text-sm text-muted-foreground">Your organization, your blog, and what a lead holds.</p>
+    <p class="mt-1 text-sm text-muted-foreground">Your organization, your website, your blog, and what a lead holds.</p>
   </header>
 
-  @for (section of sections; track section.headingId) {
+  @for (section of sections(); track section.headingId) {
     <section [attr.aria-labelledby]="section.headingId" class="grid gap-3">
       <h2 [id]="section.headingId" class="text-base">{{ section.heading }}</h2>
 
@@ -44,6 +44,12 @@
               @if (entry.soon) {
                 <span hlmBadge variant="neutral" class="text-[0.625rem] tracking-wide uppercase">
                   Soon
+                </span>
+              }
+
+              @if (entry.caution; as caution) {
+                <span hlmBadge variant="warning" class="text-[0.625rem] tracking-wide uppercase">
+                  {{ caution }}
                 </span>
               }
             </h3>

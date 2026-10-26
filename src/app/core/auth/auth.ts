@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { environment } from '@env/environment';
 import { firstValueFrom } from 'rxjs';
-import type { Admission } from './auth.types';
+import { editorRole, type Admission } from './auth.types';
 
 const SIGNED_OUT: Admission = { phase: 'signed-out' };
 
@@ -27,6 +27,11 @@ export class Auth {
   readonly workspace = computed(() => {
     const admission = this._admission();
     return admission.phase === 'admitted' ? admission.workspace : null;
+  });
+  /** True for an owner or an admin, who manage the organization's keys and settings. */
+  readonly isEditor = computed(() => {
+    const workspace = this.workspace();
+    return !!workspace && !!editorRole(workspace.role);
   });
   readonly isSignedIn = computed(() => this._admission().phase !== 'signed-out');
 

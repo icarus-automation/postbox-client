@@ -41,6 +41,8 @@ export class Login {
   protected readonly error = signal<string | null>(null);
 
   /** Better Auth sends OAuth failures back as `?error=`. The code is never shown. */
+  // The query parameter is named `error`, and `error` is the signal above, so this input takes the alias.
+  // eslint-disable-next-line @angular-eslint/no-input-rename
   readonly oauthError = input<string | undefined>(undefined, { alias: 'error' });
 
   protected readonly notice = computed(

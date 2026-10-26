@@ -20,18 +20,26 @@ Guidance for AI coding agents (Claude Code, Codex, etc.) working in this reposit
   key.
 - **Primary screens:** sign in, sign up, the leads inbox (filterable, paged list), lead
   detail (values, value edits, status and archive), Settings (the way into everything
-  below it), and Lead fields (the field list and the Add field dialog).
+  below it), Lead fields (the field list and the Add field dialog), and Developers (the
+  integration key, an agent prompt and a short API reference, for owners and admins).
 - **The blog:** marketers write posts here. The Blog list filters by status, category, tag
   and title. The post editor holds the title, the link, the blocks, and a settings rail
   with the category, tags, summary, images and search fields. Settings, Blog lists the
   categories and tags with their post counts. Websites read published posts through the
   public API in cms-api, never through this app.
-- **Not built yet:** no lead creation in the UI (machines do that over the API), no API
-  key management screen, no Organization screen (Settings shows it as Soon), and no Google
-  sign-in. Lead fields can only be listed and added here. Renaming, reordering, deleting and changing select options happen over the API.
+- **Connecting a website:** an organization has one integration key. A website sends it to
+  read published posts and to submit leads, and it can do nothing else, so it is safe in
+  website code. Developers shows it with copy, Settings, Integration key copies and rotates
+  it. The admin API keys, which can file drafts and read leads, are server-only and live
+  under Settings, Advanced. The full integration guide is served by the API, and Developers
+  links to it.
+- **Not built yet:** no lead creation in the UI (machines do that over the API), and no
+  Google sign-in. Lead fields can only be listed and added here. Renaming, reordering, deleting and changing select options happen over the API.
   Status options are fixed by the API, so there is no status editor, and archiving is a
   flag on the lead rather than one of them. The Google button
-  stays disabled and says "Soon" until the API has a Google provider.
+  stays disabled and says "Soon" until the API has a Google provider. The blog webhook
+  (URL and secret) has no screen either: an owner or admin sets it with
+  `PUT /blog/access/webhook`.
 
 The API contract this client is written against is in two docs.
 [docs/fe-phase1-api.md](docs/fe-phase1-api.md) covers sign in, sessions and API keys.
@@ -54,7 +62,8 @@ Not animation-heavy. Not UI-experiment-heavy. Favour boring, dense, accessible s
 - `pnpm start`: dev server
 - `pnpm build`: production build
 - `pnpm test`: run tests (Vitest)
-- `pnpm verify`: **build + test. Run this before claiming work is done.**
+- `pnpm lint`: ESLint over every `.ts` and `.html` file, with no warnings allowed
+- `pnpm verify`: **build + lint + test. Run this before claiming work is done.**
 - `pnpm ng g @spartan-ng/cli:ui`: add a spartan/ui component (interactive picker)
 
 ## MCP servers
@@ -73,8 +82,9 @@ sentence case headings, plain words, active voice.
 ## Current state of the repo
 
 Built so far: sign in, sign up, the leads inbox, lead detail with value edits and status
-changes, the Lead fields settings screen, the Blog list and post editor, and the Categories
-and Tags settings screens. The inbox and detail take their columns,
+changes, the Lead fields settings screen, the Blog list and post editor, the Categories
+and Tags settings screens, the Developers page, and the Integration key and Admin API keys
+settings screens. The inbox and detail take their columns,
 labels, order and value formats from the field definitions. The inbox opens on a short set
 of columns and lets a person pick the rest. The `welcome` smoke screen that shipped with
 the template is gone.
@@ -85,14 +95,16 @@ src/app/
     api/           # apiErrorMessage, credentials + 401 interceptors
     auth/          # Auth service (session signal), auth.types, authGuard/guestGuard
     blog-terms/    # BlogTerms service, category and tag types, slugify. Used by blog and settings
+    integration-key/ # IntegrationKey service: read and rotate the key. Used by developers and settings
     lead-fields/   # LeadFields service and field definition types, used by leads and settings
   layout/          # main-layout, header (account, sign out, phone link to Lead fields), sidebar
   modules/
     auth/          # auth-shell (centered card), login, sign-up. Rendered outside MainLayout
     blog/          # post list, post editor with its draft and term pickers, blocks, services
+    developers/    # the Developers page and the pure builders for its prompt and examples
     leads/         # list, detail, value display, status badge and picker, leads service
-    settings/      # the Settings index, Lead fields, and the Categories and Tags screen
-  shared/ui/       # vendored spartan helm components
+    settings/      # the Settings index, Lead fields, Categories and Tags, Integration key, Admin API keys
+  shared/ui/       # vendored spartan helm components, plus the copy button
 ```
 
 Things worth knowing before changing them:
@@ -300,6 +312,35 @@ Things worth knowing before changing them:
 - **Categories and Tags are one screen.** `/settings/categories` and `/settings/tags` load
   `BlogTermList` with a `kind` from route data. Everyone sees the post counts, which link to
   the Blog list filtered by that term. Owners and admins add, rename and delete.
+- **Developers and the key screens are for owners and admins, and the client says so three
+  ways.** The sidebar shows Developers only to them, Settings hides the Website and Advanced
+  sections from members, and `editorGuard` turns a member away from `/developers`,
+  `/settings/integration-key` and `/settings/api-keys`. The API refuses a member with a 403
+  as well, so the guard is a courtesy and not the lock.
+- **The agent prompt and the examples are plain functions.** `developer-snippets.ts` builds
+  them from the API base URL and the organization slug. Its spec holds the prompt to about a
+  dozen lines, with the guide URL in it and no key. The prompt names the env var
+  `POSTBOX_INTEGRATION_KEY` and never carries the key, and it points at the guide for
+  details. Change the wording there, not in the template.
+- **The integration key is shown in full, and rotating it asks first.** It is safe in website
+  code, so the API keeps it readable and Developers and Settings show it. Rotating cuts the
+  old key off at once, so the dialog says that before it acts. An organization the API has no
+  key for gets a Create a key button, which rotates, because rotate makes one.
+- **An admin API key's raw value is shown once.** `ApiKeysSettings` holds the new key in the
+  `created` signal while its dialog is open, takes the value off before the key joins the
+  list, and clears it when the dialog closes. Revoking keeps the row, marked Revoked.
+- **Copy is one component.** `CopyButton` (`@ui/copy-button`) puts a value on the clipboard.
+  Success is a toast. A refusal from the browser is an alert beside the button, because the
+  person has to select the text by hand.
+- **The lint config is `eslint.config.mjs`, and it ignores the vendored helm.** Files under
+  `shared/ui/*/src/` come from the spartan CLI with their own selector prefixes, so only the
+  app's code is linted: `shared/ui/copy-button` is ours and is. TypeScript gets the ESLint,
+  typescript-eslint and angular-eslint recommended sets, with inline templates checked as
+  templates. Every template also gets the accessibility rules. One rule is off on purpose:
+  `label-has-associated-control`, because `hlmField` fills in a label's `for` at runtime and a
+  markup-only rule cannot see that. axe checks the finished page. An alias on an input that a
+  query parameter feeds (`oauthError`) carries an inline disable with its reason. Fix a new
+  finding rather than adding another disable.
 - **Restart `pnpm start` after the spartan CLI adds a component.** The CLI adds a
   `@ui/<name>` path alias to `tsconfig.json`. A dev server that was already running served
   components importing the new aliases uncompiled, and they failed with a JIT compiler
@@ -359,6 +400,8 @@ outputs, or computed state. Components using the router need `provideRouter([])`
 Shared spec data is in `core/lead-fields/lead-fields.testing.ts` (the system fields as the
 API returns them, plus one custom field of each writable type) and
 `modules/leads/leads.testing.ts` (a lead with a value for each of those fields).
+`core/auth/auth.testing.ts` has `signInAs(role, slug)`, which signs a spec in to an
+organization through the same admission read the app makes.
 
 Wait for the thing the test set off, never for a timer. `await fixture.whenStable()` after
 the last response when the assertion reads the rendered view, `await vi.waitFor(() => ...)`

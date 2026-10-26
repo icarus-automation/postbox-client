@@ -20,6 +20,16 @@
       <ng-icon name="lucideInbox" aria-hidden="true" />
       Leads
     </a>
+    @if (canSeeDevelopers()) {
+      <a
+        routerLink="/developers"
+        routerLinkActive="bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+        class="flex items-center gap-2 rounded-base px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      >
+        <ng-icon name="lucideCode" aria-hidden="true" />
+        Developers
+      </a>
+    }
   </nav>
 
   <nav aria-label="Settings" class="border-t border-sidebar-border p-3">
