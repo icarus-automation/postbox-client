@@ -69,7 +69,7 @@ export function quickReference({ apiBaseUrl, slug }: Connection): ReferenceItem[
       id: 'submit-lead',
       title: 'Submit a lead',
       description:
-        'From a form, straight from the browser or from your server. Required: candidate, product, source, signal and whyLead.',
+        'From a form, straight from the browser or from your server. Required: candidate, product, source and signal. Send email or phone too: a repeat from either one joins the lead that has it.',
       example: [
         `curl -X POST "${site}/leads" \\`,
         `  ${keyHeader} \\`,
@@ -80,7 +80,7 @@ export function quickReference({ apiBaseUrl, slug }: Connection): ReferenceItem[
         '      "product": "POS",',
         '      "source": "https://example.com/contact",',
         '      "signal": "Asked for a demo",',
-        '      "whyLead": "Contact form"',
+        '      "email": "dana@example.com"',
         '    }',
         "  }'",
       ].join('\n'),

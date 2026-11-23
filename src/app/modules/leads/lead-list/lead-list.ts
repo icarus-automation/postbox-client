@@ -12,8 +12,19 @@ import { HlmLabel } from '@ui/label';
 import { HlmPopoverImports } from '@ui/popover';
 import { HlmSkeleton } from '@ui/skeleton';
 import { HlmTableImports } from '@ui/table';
+import { LeadChannelBadge } from '../lead-channel/lead-channel';
 import { LeadFieldValue } from '../lead-field-value/lead-field-value';
-import { STATUS_KEY, defaultColumnKeys, leadStatusLabel, leadTitle, titleField } from '../leads.types';
+import {
+  DEFAULT_LEAD_VIEW,
+  LEAD_VIEW_CHANNEL,
+  STATUS_KEY,
+  WHY_LEAD_KEY,
+  defaultColumnKeys,
+  leadStatusLabel,
+  leadTitle,
+  titleField,
+  type LeadView,
+} from '../leads.types';
 import { LeadColumns } from '../services/lead-columns';
 import { Leads, type LeadQuery } from '../services/leads';
 
@@ -46,6 +57,7 @@ const CONTENT_CLASSES: Record<LeadFieldType, string> = {
     HlmPopoverImports,
     HlmSkeleton,
     HlmTableImports,
+    LeadChannelBadge,
     LeadFieldValue,
   ],
   providers: [provideIcons({ lucideChevronLeft, lucideChevronRight, lucideColumns3 })],
@@ -57,6 +69,7 @@ export class LeadList {
   readonly page = input<string | undefined>(undefined);
   readonly status = input<string | undefined>(undefined);
   readonly archived = input<string | undefined>(undefined);
+  readonly view = input<string | undefined>(undefined);
 
   private readonly leadColumns = inject(LeadColumns);
 
@@ -73,12 +86,30 @@ export class LeadList {
   private readonly nameField = computed(() => titleField(this.definitions()));
 
   /**
+   * Inbound, prospects or both. Anything but the two words the URL carries reads as
+   * inbound, the view a person lands on, so a bad link still opens the inbox.
+   */
+  protected readonly currentView = computed<LeadView>(() => {
+    const view = this.view();
+    return view === 'all' || view === 'prospects' ? view : DEFAULT_LEAD_VIEW;
+  });
+
+  /**
+   * The fields this view can show. Inbound is the website form's view, and a form lead has
+   * no reason, so that column is not on offer there.
+   */
+  private readonly viewFields = computed(() => {
+    const fields = this.definitions();
+    return this.currentView() === 'inbound' ? fields.filter((field) => field.key !== WHY_LEAD_KEY) : fields;
+  });
+
+  /**
    * The columns on screen, in position order: the fields the person picked, or the short
    * ones the table opens with. The name column stays whatever they pick, because it
    * carries the link into the lead.
    */
   protected readonly columns = computed(() => {
-    const fields = this.definitions();
+    const fields = this.viewFields();
     const name = this.nameField();
     const shown = this.leadColumns.keys() ?? defaultColumnKeys(fields);
 
@@ -96,7 +127,7 @@ export class LeadList {
     const name = this.nameField();
     const shown = new Set(this.columns().map((column) => column.field.key));
 
-    return this.definitions()
+    return this.viewFields()
       .filter((field) => field !== name)
       .map((field) => ({ field, inputId: `lead-column-${field.key}`, shown: shown.has(field.key) }));
   });
@@ -140,7 +171,12 @@ export class LeadList {
     const status = this.currentStatus();
     return status === undefined
       ? undefined
-      : { page: this.currentPage(), status, archived: this.currentArchived() };
+      : {
+          page: this.currentPage(),
+          status,
+          archived: this.currentArchived(),
+          channel: LEAD_VIEW_CHANNEL[this.currentView()],
+        };
   });
 
   protected readonly leads = inject(Leads).page(this.query);
@@ -156,6 +192,8 @@ export class LeadList {
     return leads.value().data.map((lead) => ({
       id: lead.id,
       title: leadTitle(lead, fields),
+      channel: lead.channel,
+      nowInbound: lead.nowInbound,
       cells: this.columns().map((column) => ({ ...column, value: lead.values[column.field.key] ?? null })),
     }));
   });
@@ -187,6 +225,25 @@ export class LeadList {
       ...filter,
       queryParams: { status: filter.value, archived: null, page: null },
       active: inbox && filter.value === active,
+    }));
+  });
+
+  /**
+   * Where leads came from, a separate axis from the stage tabs. Switching keeps the stage
+   * and the archive, and goes back to the first page.
+   */
+  protected readonly views = computed(() => {
+    const current = this.currentView();
+    const views: { label: string; value: LeadView }[] = [
+      { label: 'All', value: 'all' },
+      { label: 'Inbound', value: 'inbound' },
+      { label: 'Prospects', value: 'prospects' },
+    ];
+
+    return views.map((view) => ({
+      ...view,
+      queryParams: { view: view.value === DEFAULT_LEAD_VIEW ? null : view.value, page: null },
+      active: view.value === current,
     }));
   });
 

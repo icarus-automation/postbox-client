@@ -1,8 +1,13 @@
 import type { Lead, LeadPage } from './leads.types';
 
-/** Spec data only. A lead holding a value for every field in `ALL_FIELDS`, as the API returns it. */
+/**
+ * Spec data only. A lead holding a value for every field in `ALL_FIELDS`, as the API returns
+ * it. An agent found it, because only an agent lead holds a value for every field.
+ */
 export const LEAD: Lead = {
   id: '01a09ba4-75d2-7308-9384-7a9b2967e673',
+  channel: 'agent',
+  nowInbound: false,
   values: {
     candidate: 'Dana Reyes',
     product: 'POS',
@@ -11,10 +16,13 @@ export const LEAD: Lead = {
     whyLead: 'Opening a second location next month.',
     status: 'new',
     receivedAt: '2026-09-13T16:40:41.682Z',
+    email: 'dana@example.com',
+    phone: '+63 917 123 4567',
     dealSize: 1200,
     tier: 'Gold',
     followUp: '2026-10-01',
   },
+  submissions: [],
   isArchived: false,
   createdAt: '2026-09-13T16:40:41.682Z',
   updatedAt: '2026-09-13T16:40:41.682Z',

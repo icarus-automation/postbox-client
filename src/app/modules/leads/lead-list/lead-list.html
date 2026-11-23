@@ -15,9 +15,26 @@
     }
   </header>
 
-  @if (statusField() || columnOptions().length > 0) {
-    <!-- One toolbar: the lists on the left, what the table shows on the right. -->
-    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border">
+  <!-- One toolbar: the lists on the left, what the table shows on the right. -->
+  <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-border">
+    <div class="flex flex-wrap items-end gap-x-4 gap-y-1">
+      <!-- Where leads came from. A segmented control, not tabs, so it reads as its own axis
+           beside the stages. -->
+      <nav aria-label="Filter leads by channel" class="mb-1.5 flex items-center gap-0.5 rounded-base border border-border p-0.5">
+        @for (option of views(); track option.value) {
+          <a
+            [routerLink]="[]"
+            [queryParams]="option.queryParams"
+            queryParamsHandling="merge"
+            [attr.aria-current]="option.active ? 'page' : null"
+            class="rounded-sm px-2.5 py-1 text-sm transition-colors"
+            [class]="option.active ? 'bg-muted font-medium text-heading' : 'text-muted-foreground hover:text-heading'"
+          >
+            {{ option.label }}
+          </a>
+        }
+      </nav>
+
       @if (statusField()) {
         <nav [attr.aria-label]="filterLabel()" class="flex flex-wrap items-center gap-1">
           @for (filter of filters(); track filter.label) {
@@ -56,46 +73,46 @@
           </a>
         </nav>
       }
-
-      @if (columnOptions().length > 0) {
-        <!-- Aligned to the row's end, so the panel opens inward instead of off the page. -->
-        <hlm-popover align="end" class="ms-auto mb-1.5">
-          <button hlmPopoverTrigger hlmBtn variant="outline" size="sm">
-            <ng-icon name="lucideColumns3" aria-hidden="true" />
-            Columns
-          </button>
-
-          <hlm-popover-content *hlmPopoverPortal class="gap-3">
-            <p class="text-xs text-muted-foreground">
-              Choose columns for this table.
-            </p>
-
-            <fieldset class="grid gap-2">
-              <legend class="sr-only">Fields to show in the table</legend>
-              @for (option of columnOptions(); track option.field.id) {
-                <div class="flex items-center gap-2">
-                  <hlm-checkbox
-                    [inputId]="option.inputId"
-                    [checked]="option.shown"
-                    (checkedChange)="showColumn(option.field.key, $event)"
-                  />
-                  <label hlmLabel [for]="option.inputId" class="font-normal">
-                    {{ option.field.label }}
-                  </label>
-                </div>
-              }
-            </fieldset>
-
-            @if (columnsPicked()) {
-              <button hlmBtn variant="link" size="sm" class="w-fit px-0" (click)="resetColumns()">
-                Reset columns
-              </button>
-            }
-          </hlm-popover-content>
-        </hlm-popover>
-      }
     </div>
-  }
+
+    @if (columnOptions().length > 0) {
+      <!-- Aligned to the row's end, so the panel opens inward instead of off the page. -->
+      <hlm-popover align="end" class="ms-auto mb-1.5">
+        <button hlmPopoverTrigger hlmBtn variant="outline" size="sm">
+          <ng-icon name="lucideColumns3" aria-hidden="true" />
+          Columns
+        </button>
+
+        <hlm-popover-content *hlmPopoverPortal class="gap-3">
+          <p class="text-xs text-muted-foreground">
+            Choose columns for this table.
+          </p>
+
+          <fieldset class="grid gap-2">
+            <legend class="sr-only">Fields to show in the table</legend>
+            @for (option of columnOptions(); track option.field.id) {
+              <div class="flex items-center gap-2">
+                <hlm-checkbox
+                  [inputId]="option.inputId"
+                  [checked]="option.shown"
+                  (checkedChange)="showColumn(option.field.key, $event)"
+                />
+                <label hlmLabel [for]="option.inputId" class="font-normal">
+                  {{ option.field.label }}
+                </label>
+              </div>
+            }
+          </fieldset>
+
+          @if (columnsPicked()) {
+            <button hlmBtn variant="link" size="sm" class="w-fit px-0" (click)="resetColumns()">
+              Reset columns
+            </button>
+          }
+        </hlm-popover-content>
+      </hlm-popover>
+    }
+  </div>
 
   @if (errorMessage(); as message) {
     <div hlmAlert variant="destructive">
@@ -147,6 +164,16 @@
             Set a lead's status to {{ statusLabel(status) }} to see it here.
           }
         </p>
+      } @else if (currentView() === 'inbound') {
+        <h2 class="text-base">No inbound leads yet</h2>
+        <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Leads from your website forms appear here, newest first.
+        </p>
+      } @else if (currentView() === 'prospects') {
+        <h2 class="text-base">No prospects yet</h2>
+        <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+          Leads your agents find appear here, newest first.
+        </p>
       } @else {
         <h2 class="text-base">No leads yet</h2>
         <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
@@ -182,6 +209,7 @@
                     >
                       {{ row.title }}
                     </a>
+                    <app-lead-channel class="mt-1" [channel]="row.channel" [nowInbound]="row.nowInbound" />
                   </td>
                 } @else {
                   <td hlmTd class="py-3 align-top">

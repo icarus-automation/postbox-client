@@ -110,7 +110,7 @@ describe('LeadDetail', () => {
     expect(el.querySelector('[data-slot="card-title"]')).toBeNull();
 
     const terms = [...el.querySelectorAll('dt')].map((dt) => text(dt));
-    expect(terms).toEqual(['Product', 'Source', 'Received', 'Deal size', 'Tier', 'Follow up']);
+    expect(terms).toEqual(['Product', 'Source', 'Received', 'Email', 'Phone', 'Deal size', 'Tier', 'Follow up']);
 
     const page = text(el)!;
     expect(page).toContain('POS');
@@ -118,6 +118,74 @@ describe('LeadDetail', () => {
     expect(page).toContain('Oct 1, 2026');
     expect(page).toContain(LEAD.values['whyLead'] as string);
     expect(page).toContain(LEAD.id);
+  });
+
+  it('says where the lead came from beside its status', async () => {
+    start();
+    await respond(leadWith({}, { channel: 'agent', nowInbound: true }));
+
+    const badges = [...el.querySelectorAll('header app-lead-channel [hlmBadge]')].map((badge) => text(badge));
+    expect(badges).toEqual(['Channel: Agent', 'Now inbound']);
+  });
+
+  it('keeps the reason off a form lead, in the record and in the edit form', async () => {
+    start();
+    await respond(leadWith({}, { channel: 'form' }));
+
+    expect(text(el.querySelector('header app-lead-channel'))).toBe('Channel: Form');
+    expect([...el.querySelectorAll('section h2')].map((heading) => text(heading))).toEqual(['What they said']);
+    expect([...el.querySelectorAll('dt')].some((dt) => text(dt) === 'Why this is a lead')).toBe(false);
+    expect(text(el)).not.toContain(LEAD.values['whyLead'] as string);
+
+    button('Edit').click();
+    await fixture.whenStable();
+
+    const labels = [...el.querySelectorAll('form label')].map((label) => text(label));
+    expect(labels.some((label) => label?.startsWith('Why this is a lead'))).toBe(false);
+  });
+
+  it('lists what the same person sent later under what they said, oldest first', async () => {
+    start();
+    await respond(
+      leadWith(
+        {},
+        {
+          channel: 'form',
+          submissions: [
+            {
+              id: 'submission-a',
+              channel: 'form',
+              values: { signal: 'Following up on my demo request.' },
+              createdAt: '2026-11-20T09:15:00.000Z',
+            },
+            {
+              id: 'submission-b',
+              channel: 'agent',
+              // A form lead keeps no reason, even from an agent that found the same person.
+              values: { signal: 'Asked again in the group.', whyLead: 'Still shopping.' },
+              createdAt: '2026-11-21T09:15:00.000Z',
+            },
+          ],
+        },
+      ),
+    );
+
+    const section = el.querySelector('section[aria-labelledby="lead-submissions-heading"]')!;
+    expect(text(section.querySelector('h2'))).toBe('Later submissions');
+
+    const items = [...section.querySelectorAll('li')];
+    expect(items.map((item) => text(item.querySelector('app-lead-channel')))).toEqual([
+      'Channel: Form',
+      'Channel: Agent',
+    ]);
+    expect(items.map((item) => item.querySelector('time')?.getAttribute('datetime'))).toEqual([
+      '2026-11-20T09:15:00.000Z',
+      '2026-11-21T09:15:00.000Z',
+    ]);
+    expect(text(items[0].querySelector('h3'))).toBe('What they said');
+    expect(text(items[0].querySelector('h3 + p'))).toBe('Following up on my demo request.');
+    expect(text(items[1].querySelector('h3 + p'))).toBe('Asked again in the group.');
+    expect(text(section)).not.toContain('Still shopping.');
   });
 
   it('uses the standard page width', () => {
@@ -261,6 +329,8 @@ describe('LeadDetail', () => {
 
       save.flush(leadWith({ status: 'contacted' }, { updatedAt: '2026-11-20T12:00:00.000Z' }));
       await vi.waitFor(() => expect(toasts()).toEqual(['Status saved']));
+      // The toast lands before the view settles on the saved lead.
+      await fixture.whenStable();
 
       expect(toastState.toasts()[0].type).toBe('success');
       expect(currentStatus()).toBe('Contacted');
@@ -459,6 +529,8 @@ describe('LeadDetail', () => {
         'Source (required)',
         'What they said (required)',
         'Why this is a lead (required)',
+        'Email',
+        'Phone',
         'Deal size',
         'Tier',
         'Follow up',

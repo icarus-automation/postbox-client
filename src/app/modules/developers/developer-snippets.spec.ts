@@ -99,7 +99,7 @@ describe('quickReference', () => {
       'product',
       'source',
       'signal',
-      'whyLead',
+      'email',
     ]);
   });
 

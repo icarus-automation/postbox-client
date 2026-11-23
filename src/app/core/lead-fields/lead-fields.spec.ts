@@ -38,6 +38,8 @@ describe('LeadFields', () => {
       'whyLead',
       'status',
       'receivedAt',
+      'email',
+      'phone',
     ]);
   });
 

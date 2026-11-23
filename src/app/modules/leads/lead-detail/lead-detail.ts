@@ -34,11 +34,13 @@ import { HlmSelectImports } from '@ui/select';
 import { HlmSkeleton } from '@ui/skeleton';
 import { HlmSpinner } from '@ui/spinner';
 import { HlmTextarea } from '@ui/textarea';
+import { LeadChannelBadge } from '../lead-channel/lead-channel';
 import { LeadFieldValue } from '../lead-field-value/lead-field-value';
 import { LeadStatusBadge } from '../lead-status/lead-status';
 import { LeadStatusPicker } from '../lead-status-picker/lead-status-picker';
 import {
   STATUS_KEY,
+  WHY_LEAD_KEY,
   isHttpUrl,
   isRetiredOption,
   leadTitle,
@@ -140,6 +142,7 @@ function withArchiveFrom(current: Lead, saved: Lead): Lead {
     HlmSkeleton,
     HlmSpinner,
     HlmTextarea,
+    LeadChannelBadge,
     LeadFieldValue,
     LeadStatusBadge,
     LeadStatusPicker,
@@ -187,6 +190,22 @@ export class LeadDetail {
     return fields.hasValue() ? fields.value() : [];
   });
 
+  /**
+   * The fields this lead's channel keeps. A form lead never has a reason, so the field is
+   * not on its page or in its edit form. An agent lead must have one, so it is required.
+   */
+  private readonly recordFields = computed(() => {
+    const channel = this.value()?.channel;
+
+    return this.definitions().flatMap((field) => {
+      if (field.key !== WHY_LEAD_KEY) {
+        return [field];
+      }
+
+      return channel === 'agent' ? [{ ...field, isRequired: true }] : [];
+    });
+  });
+
   protected readonly title = computed(() => {
     const lead = this.value();
     return lead ? leadTitle(lead, this.definitions()) : '';
@@ -232,7 +251,7 @@ export class LeadDetail {
       return [];
     }
 
-    return this.definitions().flatMap((field) => {
+    return this.recordFields().flatMap((field) => {
       const text = lead.values[field.key];
       if (field.type !== 'long_text' || typeof text !== 'string' || !isNarrative(text)) {
         return [];
@@ -240,6 +259,27 @@ export class LeadDetail {
 
       return [{ field, text, headingId: `lead-section-${field.key}` }];
     });
+  });
+
+  /**
+   * What the same person sent later, oldest first, read the way the sections above are: the
+   * long text they sent, under its label, with nothing the channel does not keep.
+   */
+  protected readonly submissions = computed(() => {
+    const lead = this.value();
+    if (!lead) {
+      return [];
+    }
+
+    const passages = this.recordFields().filter((field) => field.type === 'long_text');
+
+    return lead.submissions.map((submission) => ({
+      ...submission,
+      passages: passages.flatMap((field) => {
+        const text = submission.values[field.key];
+        return typeof text === 'string' && text.trim() !== '' ? [{ field, text }] : [];
+      }),
+    }));
   });
 
   /**
@@ -255,8 +295,8 @@ export class LeadDetail {
 
     const title = titleField(this.definitions());
 
-    return this.definitions().flatMap((field) => {
-      if (field.key === STATUS_KEY || field === title) {
+    return this.recordFields().flatMap((field) => {
+      if (field.key === STATUS_KEY || field.id === title?.id) {
         return [];
       }
 
@@ -317,7 +357,7 @@ export class LeadDetail {
   protected readonly editRows = computed<EditRow[]>(() => {
     const lead = this.value();
 
-    return this.definitions()
+    return this.recordFields()
       .filter((field) => !field.isReadOnly)
       .map((field) => {
         const value = lead?.values[field.key] ?? null;

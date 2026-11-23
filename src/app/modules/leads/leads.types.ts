@@ -4,13 +4,34 @@ import type { LeadField, LeadFieldType } from '@core/lead-fields/lead-fields.typ
 export type LeadValue = string | number | null;
 
 /**
- * One lead: an id, a value per field key, whether it is archived, and timestamps. Which
- * keys exist, and what they mean, comes from the field definitions, never from this type.
+ * How a lead came in. The API sets it from the key that filed the lead: the website's
+ * integration key files form leads, an admin API key files the leads agents find.
+ */
+export type LeadChannel = 'form' | 'agent';
+
+/** A later submission from the same email or phone, kept on the lead it matched. */
+export interface LeadSubmission {
+  id: string;
+  channel: LeadChannel;
+  /** Only the keys that were sent. */
+  values: Record<string, LeadValue>;
+  createdAt: string;
+}
+
+/**
+ * One lead: an id, its channel, a value per field key, whether it is archived, and
+ * timestamps. Which keys exist, and what they mean, comes from the field definitions,
+ * never from this type.
  */
 export interface Lead {
   id: string;
+  channel: LeadChannel;
+  /** An agent lead whose person has since sent the website form. */
+  nowInbound: boolean;
   /** Every current field key in position order, with null where the lead has no value. */
   values: Record<string, LeadValue>;
+  /** Later submissions attached to this lead, oldest first. */
+  submissions: LeadSubmission[];
   /**
    * Out of the inbox. It sits beside `values`, not inside them, because archiving is not a
    * stage: an archived lead keeps the status it reached and comes back at it.
@@ -37,6 +58,32 @@ export interface LeadPage {
  * the inbox filters on. Field keys never change, so this is safe to name.
  */
 export const STATUS_KEY = 'status';
+
+/**
+ * The system field for why an agent thinks this is a lead. Agent leads must hold it and
+ * form leads never do, so the screens hide it wherever a form lead is on show.
+ */
+export const WHY_LEAD_KEY = 'whyLead';
+
+export function leadChannelLabel(channel: LeadChannel): string {
+  return channel === 'form' ? 'Form' : 'Agent';
+}
+
+/**
+ * The inbox views. Inbound is what came in through the website form, which takes in an
+ * agent lead whose person has since sent it. Prospects are the leads agents found.
+ */
+export type LeadView = 'all' | 'inbound' | 'prospects';
+
+/** The view a person lands on. */
+export const DEFAULT_LEAD_VIEW: LeadView = 'inbound';
+
+/** What `GET /leads` filters on for each view. The API reads `form` as inbound. */
+export const LEAD_VIEW_CHANNEL: Record<LeadView, LeadChannel | null> = {
+  all: null,
+  inbound: 'form',
+  prospects: 'agent',
+};
 
 /** Sentence case label for a status value, for screens and screen readers alike. */
 export function leadStatusLabel(status: string): string {

@@ -57,13 +57,13 @@ describe('lead helpers', () => {
   });
 
   it('opens the table on the short fields and leaves long text and links off it', () => {
-    expect(defaultColumnKeys(SYSTEM_FIELDS)).toEqual(['candidate', 'product', 'status', 'receivedAt']);
+    expect(defaultColumnKeys(SYSTEM_FIELDS.slice(0, 7))).toEqual(['candidate', 'product', 'status', 'receivedAt']);
     expect(defaultColumnKeys(ALL_FIELDS)).toEqual([
       'candidate',
       'product',
       'status',
       'receivedAt',
-      'dealSize',
+      'email',
     ]);
     expect(defaultColumnKeys(ALL_FIELDS).length).toBe(DEFAULT_COLUMN_LIMIT);
     expect(defaultColumnKeys([])).toEqual([]);

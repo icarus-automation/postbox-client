@@ -11,8 +11,8 @@ Guidance for AI coding agents (Claude Code, Codex, etc.) working in this reposit
 - **What it does for them:** turns a stream of agent-written leads into something
   scannable. The organization's lead fields decide what a lead holds. Every organization
   starts with system fields for the candidate, product, source, signal, why the lead is
-  worth a message, the status and when the lead arrived. The owner can add custom fields
-  after those.
+  worth a message, the status, when the lead arrived, and an email and phone. The owner
+  can add custom fields after those.
 - **The loop it serves:** open the source from the list, open the lead, read what they
   said, fill in or correct values, then set the status, and archive what is done with.
   Agents file every lead as `new`. Only a person moves it to contacted or qualified, and
@@ -125,15 +125,27 @@ Things worth knowing before changing them:
   alert. A successful sign-up is signed in and opens `/create-organization`.
 - **Reading `value()` on a resource in an error state throws.** Go through `hasValue()`,
   the way `LeadList.rows` and `LeadDetail.value` do.
-- **List state lives in the query string.** `page`, `status` and `archived` arrive as signal inputs
+- **Every lead has a channel, and the API sets it.** `form` came in through a website with
+  the integration key, `agent` was found by an agent with an admin API key. The inbox has a
+  channel filter (All, Inbound, Prospects) beside the stage tabs, kept in `?view=`, and it
+  opens on Inbound, which leaves `view` out of the URL. Inbound asks the API for
+  `channel=form`, which also lists an agent lead whose person has since sent the form
+  (`nowInbound`). Each row and the lead header carry a Form or Agent badge, plus Now inbound.
+- **`whyLead` belongs to agent leads.** A form lead never holds it, so the Inbound view does
+  not offer the column and a form lead's page and edit form leave it out. On an agent lead
+  it is required. That is the second key the client names, after `status`.
+- **A repeat from the same email or phone joins the lead it matches.** The API keeps it in
+  `submissions`, and the lead page lists them under Later submissions, below the passages.
+- **List state lives in the query string.** `page`, `status`, `archived` and `view` arrive as signal inputs
   through `withComponentInputBinding()`, so filters and paging are linkable and survive a
   refresh. Both are validated, because anyone can type nonsense into the URL. Links from
   the list into a lead, and back, use `queryParamsHandling="preserve"`, so a person returns
   to the tab they came from.
-- **Leads have no fixed columns.** A lead is `{ id, values, createdAt, updatedAt }`, and
-  `values` is keyed by field key. Format values by field type in `LeadFieldValue`, never by
-  key. The client names one key, `status`, a system field that cannot be deleted, because
-  the API gives it its own route and its own filter. A lead is named after the first text
+- **Leads have no fixed columns.** A lead is `{ id, channel, values, submissions, createdAt,
+  updatedAt }` and a few flags, and `values` is keyed by field key. Format values by field
+  type in `LeadFieldValue`, never by key. The client names two keys, both system fields that
+  cannot be deleted: `status`, because the API gives it its own route and its own filter,
+  and `whyLead`, because the channel decides whether a lead has one. A lead is named after the first text
   field, which is the system `candidate` field unless another text field moves ahead of it.
 - **The lead page reads as what they said, then the facts, and it has no boxes.** Every
   passage is a `field-label` heading over its text, told apart by that label and the

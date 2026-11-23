@@ -56,6 +56,8 @@
                  details rail, with the rest of the fields the record holds. -->
             <app-lead-status [status]="status" />
           }
+
+          <app-lead-channel [channel]="lead.channel" [nowInbound]="lead.nowInbound" />
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -250,6 +252,32 @@
             <section [attr.aria-labelledby]="section.headingId">
               <h2 [id]="section.headingId" class="field-label">{{ section.field.label }}</h2>
               <p class="mt-2 whitespace-pre-line text-body">{{ section.text }}</p>
+            </section>
+          }
+
+          @if (submissions().length > 0) {
+            <!-- The same person again, by email or phone. Attached here rather than filed as
+                 another lead, oldest first. -->
+            <section aria-labelledby="lead-submissions-heading">
+              <h2 id="lead-submissions-heading" class="field-label">Later submissions</h2>
+              <ol class="mt-2 grid gap-5">
+                @for (submission of submissions(); track submission.id) {
+                  <li class="grid gap-2">
+                    <p class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <app-lead-channel [channel]="submission.channel" />
+                      <time [attr.datetime]="submission.createdAt">
+                        {{ submission.createdAt | date: 'MMM d, y, HH:mm' }}
+                      </time>
+                    </p>
+                    @for (passage of submission.passages; track passage.field.id) {
+                      <div>
+                        <h3 class="field-label">{{ passage.field.label }}</h3>
+                        <p class="mt-1 whitespace-pre-line text-body">{{ passage.text }}</p>
+                      </div>
+                    }
+                  </li>
+                }
+              </ol>
             </section>
           }
         </div>

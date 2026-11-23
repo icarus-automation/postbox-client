@@ -52,7 +52,8 @@ export const SYSTEM_FIELDS: LeadField[] = [
     label: 'Why this is a lead',
     type: 'long_text',
     options: [],
-    isRequired: true,
+    // The channel decides: agent leads must hold it, form leads never do.
+    isRequired: false,
     isReadOnly: false,
     isSystem: true,
     position: 4,
@@ -79,6 +80,28 @@ export const SYSTEM_FIELDS: LeadField[] = [
     isSystem: true,
     position: 6,
   },
+  {
+    id: '01a09ba3-fb90-77df-8287-a5c1d0e4f7a1',
+    key: 'email',
+    label: 'Email',
+    type: 'text',
+    options: [],
+    isRequired: false,
+    isReadOnly: false,
+    isSystem: true,
+    position: 7,
+  },
+  {
+    id: '01a09ba3-fb90-77df-8287-a7e2b8c90f12',
+    key: 'phone',
+    label: 'Phone',
+    type: 'text',
+    options: [],
+    isRequired: false,
+    isReadOnly: false,
+    isSystem: true,
+    position: 8,
+  },
 ];
 
 /** Spec data only. Custom fields of each writable type, after the system ones. */
@@ -92,7 +115,7 @@ export const CUSTOM_FIELDS: LeadField[] = [
     isRequired: false,
     isReadOnly: false,
     isSystem: false,
-    position: 7,
+    position: 9,
   },
   {
     // Gold was an option once. Leads that hold it keep it.
@@ -104,7 +127,7 @@ export const CUSTOM_FIELDS: LeadField[] = [
     isRequired: false,
     isReadOnly: false,
     isSystem: false,
-    position: 8,
+    position: 10,
   },
   {
     id: '01a09ba4-7291-7bd4-a8f5-0d1e0c7d3b11',
@@ -115,7 +138,7 @@ export const CUSTOM_FIELDS: LeadField[] = [
     isRequired: false,
     isReadOnly: false,
     isSystem: false,
-    position: 9,
+    position: 11,
   },
 ];
 

@@ -67,9 +67,11 @@ describe('LeadFieldList', () => {
       ['Product Built-in', 'Select', 'Yes', 'product'],
       ['Source Built-in', 'URL', 'Yes', 'source'],
       ['What they said Built-in', 'Long text', 'Yes', 'signal'],
-      ['Why this is a lead Built-in', 'Long text', 'Yes', 'whyLead'],
+      ['Why this is a lead Built-in', 'Long text', 'No', 'whyLead'],
       ['Status Built-in Automatic', 'Select', 'Not applicable', 'status'],
       ['Received Built-in Automatic', 'Date and time', 'Not applicable', 'receivedAt'],
+      ['Email Built-in', 'Text', 'No', 'email'],
+      ['Phone Built-in', 'Text', 'No', 'phone'],
     ]);
   });
 

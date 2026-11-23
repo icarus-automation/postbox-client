@@ -10,7 +10,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { ALL_FIELDS, SYSTEM_FIELDS } from '@core/lead-fields/lead-fields.testing';
 import type { LeadField } from '@core/lead-fields/lead-fields.types';
 import { environment } from '@env/environment';
-import { LEAD, leadPage } from '../leads.testing';
+import { LEAD, leadPage, leadWith } from '../leads.testing';
 import type { LeadPage } from '../leads.types';
 import { LEAD_COLUMNS_KEY, LeadColumns } from '../services/lead-columns';
 import { LeadList } from './lead-list';
@@ -81,7 +81,7 @@ describe('LeadList', () => {
     menu()!.querySelector<HTMLElement>(`#lead-column-${key}`)!.click();
   }
 
-  const DEFAULT_HEADERS = ['Contact', 'Product', 'Status', 'Received', 'Deal size'];
+  const DEFAULT_HEADERS = ['Contact', 'Product', 'Status', 'Received', 'Email'];
 
   beforeEach(async () => {
     // The column pick outlives a test, because it is kept in this browser.
@@ -106,6 +106,75 @@ describe('LeadList', () => {
     expect(request.params.get('page')).toBe('1');
     expect(request.params.get('limit')).toBe('20');
     expect(request.params.has('status')).toBe(false);
+  });
+
+  it('opens on inbound leads, and reads prospects or both when the URL says so', () => {
+    start();
+    expect(leadsRequest().request.params.get('channel')).toBe('form');
+
+    fixture.componentRef.setInput('view', 'prospects');
+    TestBed.tick();
+    expect(leadsRequest().request.params.get('channel')).toBe('agent');
+
+    fixture.componentRef.setInput('view', 'all');
+    TestBed.tick();
+    expect(leadsRequest().request.params.has('channel')).toBe(false);
+
+    fixture.componentRef.setInput('view', 'nonsense');
+    TestBed.tick();
+    expect(leadsRequest().request.params.get('channel')).toBe('form');
+  });
+
+  it('offers all, inbound and prospects beside the stage tabs, marking the current one', async () => {
+    start({ status: 'new' });
+    await respond();
+
+    const nav = el.querySelector('nav[aria-label="Filter leads by channel"]')!;
+    const links = [...nav.querySelectorAll('a')];
+
+    expect(links.map((a) => a.textContent?.trim())).toEqual(['All', 'Inbound', 'Prospects']);
+    expect(links.filter((a) => a.getAttribute('aria-current') === 'page').map((a) => a.textContent?.trim())).toEqual([
+      'Inbound',
+    ]);
+    // Inbound is where a person lands, so its link drops the view from the URL. Every link
+    // goes back to the first page.
+    expect(links[0].getAttribute('href')).toContain('view=all');
+    expect(links[1].getAttribute('href')).not.toContain('view=');
+    expect(links[2].getAttribute('href')).toContain('view=prospects');
+    expect(links.every((a) => !a.getAttribute('href')?.includes('page='))).toBe(true);
+  });
+
+  it('badges each row with where it came from, and a prospect who sent the form as now inbound', async () => {
+    start({ view: 'all' });
+    await respond(
+      leadPage({
+        data: [
+          leadWith({ candidate: 'Form Lead' }, { id: 'lead-form', channel: 'form' }),
+          leadWith({ candidate: 'Agent Lead' }, { id: 'lead-agent', channel: 'agent' }),
+          leadWith({ candidate: 'Replied' }, { id: 'lead-replied', channel: 'agent', nowInbound: true }),
+        ],
+        meta: { total: 3, page: 1, limit: 20, lastPage: 1 },
+      }),
+    );
+
+    const badges = [...el.querySelectorAll('tbody tr')].map((row) =>
+      [...row.querySelectorAll('td:first-child [hlmBadge]')].map((badge) => badge.textContent?.trim()),
+    );
+    expect(badges).toEqual([['Channel: Form'], ['Channel: Agent'], ['Channel: Agent', 'Now inbound']]);
+  });
+
+  it('keeps the reason a lead is worth a message off the inbound view', async () => {
+    start();
+    await respond();
+    await openColumns();
+
+    const options = [...menu()!.querySelectorAll('label')].map((label) => label.textContent?.trim());
+    expect(options).not.toContain('Why this is a lead');
+
+    // A pick made in another view does not bring it back here.
+    TestBed.inject(LeadColumns).pick(['whyLead', 'product']);
+    await fixture.whenStable();
+    expect(headers()).toEqual(['Contact', 'Product']);
   });
 
   it('falls back to page one when the query string is junk', () => {
@@ -145,7 +214,7 @@ describe('LeadList', () => {
   });
 
   it('offers every other field in the columns menu and keeps the name column out of it', async () => {
-    start();
+    start({ view: 'all' });
     await respond();
     await openColumns();
 
@@ -154,7 +223,7 @@ describe('LeadList', () => {
   });
 
   it('adds a column the person picks and remembers it for the next visit', async () => {
-    start();
+    start({ view: 'prospects' });
     await respond();
     await openColumns();
 
@@ -168,7 +237,7 @@ describe('LeadList', () => {
       'Why this is a lead',
       'Status',
       'Received',
-      'Deal size',
+      'Email',
     ]);
     expect(JSON.parse(localStorage.getItem(LEAD_COLUMNS_KEY) ?? 'null')).toContain('whyLead');
   });
@@ -178,7 +247,7 @@ describe('LeadList', () => {
     await respond();
     await openColumns();
 
-    for (const key of ['product', 'status', 'receivedAt', 'dealSize']) {
+    for (const key of ['product', 'status', 'receivedAt', 'email']) {
       pick(key);
     }
     await fixture.whenStable();
@@ -219,13 +288,16 @@ describe('LeadList', () => {
   it('shows each value the way its type reads', async () => {
     TestBed.inject(LeadColumns).pick(ALL_FIELDS.map((field) => field.key));
 
-    start();
+    start({ view: 'all' });
     await respond();
 
     const text = (key: string) =>
       cells()[ALL_FIELDS.findIndex((field) => field.key === key)].textContent?.replace(/\s+/g, ' ').trim();
 
-    expect(text('candidate')).toBe('Dana Reyes');
+    // The name cell carries the channel badge under the name.
+    expect(text('candidate')).toBe('Dana Reyes Channel: Agent');
+    expect(text('email')).toBe('dana@example.com');
+    expect(text('phone')).toBe('+63 917 123 4567');
     expect(text('product')).toBe('POS');
     expect(text('signal')).toBe('Asked which POS handles split bills for a 40-seat cafe');
     expect(text('whyLead')).toBe(LEAD.values['whyLead']);
@@ -325,11 +397,23 @@ describe('LeadList', () => {
     expect(el.textContent).not.toContain('Showing');
   });
 
-  it('says the inbox is empty rather than showing a bare table', async () => {
+  it('says the inbox is empty rather than showing a bare table, in the words of its view', async () => {
     start();
     await respond(EMPTY_PAGE);
 
     expect(el.querySelector('tbody tr')).toBeNull();
+    expect(el.textContent).toContain('No inbound leads yet');
+
+    fixture.componentRef.setInput('view', 'prospects');
+    TestBed.tick();
+    leadsRequest().flush(EMPTY_PAGE);
+    await fixture.whenStable();
+    expect(el.textContent).toContain('No prospects yet');
+
+    fixture.componentRef.setInput('view', 'all');
+    TestBed.tick();
+    leadsRequest().flush(EMPTY_PAGE);
+    await fixture.whenStable();
     expect(el.textContent).toContain('No leads yet');
   });
 

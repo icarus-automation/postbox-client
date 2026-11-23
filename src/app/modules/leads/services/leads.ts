@@ -2,7 +2,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Injectable, inject, type Signal } from '@angular/core';
 import { environment } from '@env/environment';
 import { firstValueFrom } from 'rxjs';
-import type { Lead, LeadPage, LeadValue } from '../leads.types';
+import type { Lead, LeadChannel, LeadPage, LeadValue } from '../leads.types';
 
 /** Rows per page. The API caps `limit` at 50. */
 export const LEADS_PAGE_SIZE = 20;
@@ -13,6 +13,8 @@ export interface LeadQuery {
   status: string | null;
   /** Which list to read: the inbox, or the archive. Never both. */
   archived: boolean;
+  /** `form` for inbound, `agent` for prospects, or null for both. */
+  channel: LeadChannel | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -32,7 +34,7 @@ export class Leads {
         return undefined;
       }
 
-      const { page, status, archived } = current;
+      const { page, status, archived, channel } = current;
 
       return {
         url: this.base,
@@ -41,6 +43,7 @@ export class Leads {
           limit: LEADS_PAGE_SIZE,
           archived,
           ...(status ? { status } : {}),
+          ...(channel ? { channel } : {}),
         },
       };
     });
