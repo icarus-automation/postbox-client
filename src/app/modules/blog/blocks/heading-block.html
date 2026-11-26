@@ -36,5 +36,30 @@
         (input)="setText($event)"
       />
     </div>
+    <section class="grid gap-2" [attr.aria-labelledby]="'heading-advanced-' + block.id">
+      <h3 [id]="'heading-advanced-' + block.id" class="text-sm font-medium text-heading">Advanced</h3>
+      <div hlmField class="gap-1.5">
+        <label hlmFieldLabel [for]="'heading-anchor-' + block.id">Anchor</label>
+        <input
+          hlmInput
+          [id]="'heading-anchor-' + block.id"
+          type="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          class="font-mono"
+          [value]="block.anchor ?? ''"
+          (input)="setAnchor($event)"
+        />
+        <p hlmFieldDescription class="text-xs">
+          @if (anchorPreview(); as preview) {
+            {{ preview }}
+          } @else {
+            Leave this blank and it is made from the heading.
+          }
+        </p>
+        <hlm-field-error [forceShow]="!!anchorError()">{{ anchorError() }}</hlm-field-error>
+      </div>
+    </section>
   }
 }

@@ -35,7 +35,7 @@ import {
   type MediaRef,
   type SavePostBody,
 } from '../blog.types';
-import { draftProblem, saveBody } from '../post.document';
+import { draftProblem, headingAnchorRefusals, saveBody } from '../post.document';
 import { Posts } from '../services/posts';
 import { CategoryPicker } from './category-picker';
 import { PostDraft } from './post-draft';
@@ -318,11 +318,13 @@ export class PostEditor {
       const saved = isNew ? await this.posts.create(body) : await this.posts.save(post.id, body);
       this.slugNote.set(takenSlugNote(post, body, saved));
       this.draft.settle(body, saved);
+      this.draft.setAnchorRefusals(new Map());
       if (isNew) {
         await this.moveToSaved(saved.id);
       }
       return saved;
     } catch (error) {
+      this.draft.setAnchorRefusals(headingAnchorRefusals(error, body.blocks));
       this.saveError.set(apiErrorMessage(error, 'Could not save. Try again.'));
       return null;
     } finally {

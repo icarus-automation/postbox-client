@@ -285,6 +285,92 @@ describe('PostEditor', () => {
     expect(TestBed.inject(Router).url).toBe('/blog/post-1');
   });
 
+  describe('heading anchor', () => {
+    const anchorBox = () => el.querySelector<HTMLInputElement>('input[id^="heading-anchor-"]')!;
+    const headingBox = () => el.querySelector<HTMLInputElement>('input[id^="heading-text-"]')!;
+
+    it('offers a blank anchor on a new heading and leaves it off the saved post', async () => {
+      await openNew();
+      type(titleBox(), 'Summer menu');
+      await harness.fixture.whenStable();
+
+      button('Heading')!.click();
+      await harness.fixture.whenStable();
+
+      const section = anchorBox().closest('section')!;
+      expect(section.querySelector('h3')?.textContent?.trim()).toBe('Advanced');
+      expect(anchorBox().value).toBe('');
+      expect(section.querySelector('label')?.getAttribute('for')).toBe(anchorBox().id);
+      expect(section.textContent).toContain('Leave this blank and it is made from the heading.');
+
+      type(headingBox(), 'Summer hours');
+      await harness.fixture.whenStable();
+
+      button('Save draft')!.click();
+      const create = http.expectOne({ method: 'POST', url: POSTS_URL });
+      const heading = create.request.body.blocks.find((block: { kind: string }) => block.kind === 'heading');
+      expect(heading).toEqual({ id: heading.id, kind: 'heading', level: 2, text: 'Summer hours' });
+      expect(heading).not.toHaveProperty('anchor');
+
+      create.flush({
+        ...POST,
+        id: 'post-2',
+        slug: 'summer-menu',
+        blocks: [{ ...heading, anchor: 'summer-hours' }],
+      });
+      const reread = await vi.waitFor(() => http.expectOne(`${POSTS_URL}/post-2`));
+      reread.flush({
+        ...POST,
+        id: 'post-2',
+        slug: 'summer-menu',
+        blocks: [{ ...heading, anchor: 'summer-hours' }],
+      });
+      await harness.fixture.whenStable();
+
+      const saved = el.querySelector<HTMLInputElement>(`#heading-anchor-${heading.id}`)!;
+      expect(saved.value).toBe('summer-hours');
+      expect(saved.closest('[data-slot="field"]')?.textContent).toContain('#summer-hours');
+    });
+
+    it('keeps a saved anchor when the heading changes, and shows a refusal on the anchor', async () => {
+      await open({
+        ...POST,
+        blocks: [{ id: 'heading-1', kind: 'heading', level: 2, text: 'Summer hours', anchor: 'summer-hours' }],
+      });
+
+      const anchor = () => el.querySelector<HTMLInputElement>('#heading-anchor-heading-1')!;
+      const field = () => anchor().closest('[data-slot="field"]')!;
+
+      expect(anchor().value).toBe('summer-hours');
+      expect(field().textContent).toContain('#summer-hours');
+
+      type(el.querySelector<HTMLInputElement>('#heading-text-heading-1')!, 'Winter hours');
+      await harness.fixture.whenStable();
+      expect(anchor().value).toBe('summer-hours');
+
+      type(anchor(), 'Bad Anchor');
+      await harness.fixture.whenStable();
+      expect(field().textContent).toContain('Use lowercase letters, numbers, and single hyphens.');
+
+      button('Save draft')!.click();
+      await harness.fixture.whenStable();
+      http.expectNone({ method: 'PUT', url: `${POSTS_URL}/post-1` });
+
+      type(anchor(), 'other-hours');
+      await harness.fixture.whenStable();
+
+      button('Save draft')!.click();
+      const save = http.expectOne({ method: 'PUT', url: `${POSTS_URL}/post-1` });
+      expect(save.request.body.blocks[0]).toMatchObject({ text: 'Winter hours', anchor: 'other-hours' });
+      save.flush(
+        { message: 'blocks.0.anchor is already used' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+      await vi.waitFor(() => expect(field().textContent).toContain('blocks.0.anchor is already used'));
+    });
+  });
+
   it('leaves without asking when everything is saved', async () => {
     await open(POST);
 

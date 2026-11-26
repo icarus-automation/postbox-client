@@ -1,4 +1,5 @@
-import { SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from '@core/blog-terms/slug';
+import { HttpErrorResponse } from '@angular/common/http';
+import { SLUG_MAX_LENGTH, SLUG_PATTERN, slugProblem, slugify } from '@core/blog-terms/slug';
 import { blankBlock } from './blocks/blank-block';
 import { NEW_POST_ID, type Block, type EditorPost, type SavePostBody } from './blog.types';
 
@@ -89,16 +90,75 @@ export function draftProblem(body: SavePostBody): string | null {
   if (body.blocks.some((block) => block.kind === 'heading' && block.text.trim().length > 200)) {
     return 'Use a shorter heading.';
   }
+  for (const block of body.blocks) {
+    if (block.kind !== 'heading') {
+      continue;
+    }
+    const problem = slugProblem(block.anchor ?? '');
+    if (problem) {
+      return problem;
+    }
+  }
   return null;
+}
+
+export function headingAnchorRefusals(error: unknown, blocks: readonly Block[]): ReadonlyMap<string, string> {
+  const refusals = new Map<string, string>();
+  if (!(error instanceof HttpErrorResponse)) {
+    return refusals;
+  }
+  const headings = blocks.filter((block) => block.kind === 'heading');
+  for (const line of messageLines(error)) {
+    const index = anchorIndex(line);
+    if (index !== null) {
+      const block = blocks[index];
+      if (block?.kind === 'heading') {
+        addRefusal(refusals, block.id, line);
+      }
+      continue;
+    }
+    if (/\banchor\b/.test(line) && headings.length === 1) {
+      addRefusal(refusals, headings[0].id, line);
+    }
+  }
+  return refusals;
 }
 
 function normalizeBlock(block: Block): Block {
   if (block.kind === 'heading') {
-    return { ...block, text: block.text.trim() };
+    const text = block.text.trim();
+    const anchor = block.anchor?.trim() ?? '';
+    const next = { id: block.id, kind: block.kind, level: block.level, text };
+    return anchor.length > 0 ? { ...next, anchor } : next;
   }
   if (block.kind === 'media_text') {
     const heading = block.heading?.trim() ?? '';
     return { ...block, heading: heading.length > 0 ? heading : null };
   }
   return block;
+}
+
+function anchorIndex(line: string): number | null {
+  const match = /blocks\.(\d+)\.anchor\b|blocks\[(\d+)\]\.anchor\b/.exec(line);
+  if (!match) {
+    return null;
+  }
+  return Number(match[1] ?? match[2]);
+}
+
+function messageLines(error: HttpErrorResponse): string[] {
+  const body = error.error as { message?: unknown } | null;
+  const message = body?.message;
+  if (typeof message === 'string' && message.length > 0) {
+    return [message];
+  }
+  if (Array.isArray(message)) {
+    return message.filter((line): line is string => typeof line === 'string' && line.length > 0);
+  }
+  return [];
+}
+
+function addRefusal(refusals: Map<string, string>, id: string, line: string): void {
+  const prior = refusals.get(id);
+  refusals.set(id, prior ? `${prior}. ${line}` : line);
 }
