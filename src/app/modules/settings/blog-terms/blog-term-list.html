@@ -134,7 +134,11 @@
         </h2>
         <p class="text-sm text-muted-foreground">
           @if (target()) {
-            Its link on your site changes with the name.
+            @if (kind() === 'category') {
+              The link stays as it is until you change the slug.
+            } @else {
+              Its link on your site changes with the name.
+            }
           } @else {
             You can pick it on any post.
           }
@@ -151,15 +155,35 @@
       <div hlmField class="gap-1.5">
         <label hlmFieldLabel for="term-name">Name</label>
         <input hlmInput id="term-name" type="text" autocomplete="off" [formField]="nameForm.name" />
-        <p hlmFieldDescription class="text-xs">
-          @if (nameSlug(); as slug) {
-            Its link will be <span class="font-mono">{{ slug }}</span>.
-          } @else {
-            The link comes from the name.
-          }
-        </p>
+        @if (kind() !== 'category') {
+          <p hlmFieldDescription class="text-xs">
+            @if (nameSlug(); as slug) {
+              Its link will be <span class="font-mono">{{ slug }}</span>.
+            } @else {
+              The link comes from the name.
+            }
+          </p>
+        }
         <hlm-field-error>{{ nameForm.name().errors()[0]?.message }}</hlm-field-error>
       </div>
+
+      @if (kind() === 'category') {
+        <div hlmField class="gap-1.5">
+          <label hlmFieldLabel for="term-slug">Slug</label>
+          <input
+            hlmInput
+            id="term-slug"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            class="font-mono"
+            [formField]="nameForm.slug"
+          />
+          <p hlmFieldDescription class="text-xs">Changing the slug breaks URLs that use it.</p>
+          <hlm-field-error>{{ nameForm.slug().errors()[0]?.message }}</hlm-field-error>
+        </div>
+      }
 
       <div hlmDialogFooter>
         <button hlmBtn type="button" variant="outline" [disabled]="nameForm().submitting()" (click)="nameDialog.close()">

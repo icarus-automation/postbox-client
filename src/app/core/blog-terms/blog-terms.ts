@@ -24,14 +24,14 @@ export class BlogTerms {
   }
 
   /** Adds one. A name that is already there, in any case, comes back as the one it names. */
-  create(kind: TermKind, name: string): Promise<Term> {
-    return firstValueFrom(this.http.post<Term>(this.url(kind), { name }));
+  create(kind: TermKind, name: string, slug?: string): Promise<Term> {
+    return firstValueFrom(this.http.post<Term>(this.url(kind), this.body(kind, name, slug)));
   }
 
-  /** The slug is made from the new name. */
-  rename(kind: TermKind, id: string, name: string): Promise<Term> {
+  /** A category slug changes only when the call sends one. A tag slug is still made from the new name. */
+  rename(kind: TermKind, id: string, name: string, slug?: string): Promise<Term> {
     return firstValueFrom(
-      this.http.patch<Term>(`${this.url(kind)}/${encodeURIComponent(id)}`, { name }),
+      this.http.patch<Term>(`${this.url(kind)}/${encodeURIComponent(id)}`, this.body(kind, name, slug)),
     );
   }
 
@@ -42,5 +42,13 @@ export class BlogTerms {
 
   private url(kind: TermKind): string {
     return `${this.base}/${PATHS[kind]}`;
+  }
+
+  private body(kind: TermKind, name: string, slug?: string): { name: string; slug?: string } {
+    const trimmed = slug?.trim() ?? '';
+    if (kind === 'category' && trimmed.length > 0) {
+      return { name, slug: trimmed };
+    }
+    return { name };
   }
 }

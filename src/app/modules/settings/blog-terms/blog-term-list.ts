@@ -19,7 +19,7 @@ import { Auth } from '@core/auth/auth';
 import { editorRole } from '@core/auth/auth.types';
 import { BlogTerms } from '@core/blog-terms/blog-terms';
 import type { Term, TermKind } from '@core/blog-terms/blog-terms.types';
-import { slugify } from '@core/blog-terms/slug';
+import { slugProblem, slugify } from '@core/blog-terms/slug';
 import { withTerm } from '@core/blog-terms/term-list';
 import { HlmAlert, HlmAlertDescription, HlmAlertTitle } from '@ui/alert';
 import { HlmButton } from '@ui/button';
@@ -138,7 +138,7 @@ export class BlogTermList {
   protected readonly deleteError = signal<string | null>(null);
   protected readonly nameError = signal<string | null>(null);
 
-  private readonly draft = signal({ name: '' });
+  private readonly draft = signal({ name: '', slug: '' });
 
   protected readonly nameForm = form(
     this.draft,
@@ -159,6 +159,13 @@ export class BlogTermList {
           ? { kind: 'slug', message: 'Use at least one letter or number.' }
           : undefined,
       );
+      validate(path.slug, ({ value }) => {
+        const message = slugProblem(value());
+        if (!message || this.kind() !== 'category') {
+          return undefined;
+        }
+        return { kind: 'slug', message };
+      });
     },
     { submission: { action: () => this.saveName() } },
   );
@@ -202,35 +209,74 @@ export class BlogTermList {
   private openNameDialog(term: Term | null): void {
     this.target.set(term);
     this.nameError.set(null);
-    this.nameForm().reset({ name: term?.name ?? '' });
+    this.nameForm().reset({
+      name: term?.name ?? '',
+      slug: this.kind() === 'category' && term ? term.slug : '',
+    });
     this.nameDialog().open();
   }
 
   private async saveName(): Promise<TreeValidationResult> {
     const target = this.target();
     const name = this.draft().name.trim().replace(/\s+/g, ' ');
+    const slug = this.draft().slug.trim();
+    const sentSlug = this.kind() === 'category' && slug.length > 0 ? slug : undefined;
     this.nameError.set(null);
     try {
       const saved = target
-        ? await this.terms.rename(this.kind(), target.id, name)
-        : await this.terms.create(this.kind(), name);
+        ? await this.terms.rename(this.kind(), target.id, name, sentSlug)
+        : await this.terms.create(this.kind(), name, sentSlug);
       this.list.update((list) => withTerm(list ?? [], saved));
       this.nameDialog().close();
       toast.success(target ? `Renamed to ${saved.name}` : `Added ${saved.name}`);
     } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === 409) {
-        return [
-          {
-            fieldTree: this.nameForm.name,
-            kind: 'taken',
-            message: apiErrorMessage(error, 'Another one already has this name.'),
-          },
-        ];
+      if (error instanceof HttpErrorResponse && (error.status === 409 || error.status === 400)) {
+        return this.termRefusals(error);
       }
       this.nameError.set(apiErrorMessage(error, 'Could not save it. Try again.'));
     }
     return undefined;
   }
+
+  /** A slug line stays on the slug. A name line, or a 409 that never mentions a slug, stays on the name. */
+  private termRefusals(error: HttpErrorResponse): TreeValidationResult {
+    const lines = messageLines(error);
+    const slugLines = lines.filter((line) => /\bslug\b/i.test(line));
+    if (error.status === 409 && slugLines.length === 0) {
+      return [
+        {
+          fieldTree: this.nameForm.name,
+          kind: 'taken',
+          message: apiErrorMessage(error, 'Another one already has this name.'),
+        },
+      ];
+    }
+    const nameLines = lines.filter((line) => /\bname\b/i.test(line) && !/\bslug\b/i.test(line));
+    const rest = lines.filter((line) => !/\bslug\b/i.test(line) && !/\bname\b/i.test(line));
+    if (rest.length > 0) {
+      this.nameError.set(rest.join('. '));
+    }
+    const errors = [];
+    if (nameLines.length > 0) {
+      errors.push({ fieldTree: this.nameForm.name, kind: 'taken', message: nameLines.join('. ') });
+    }
+    if (slugLines.length > 0) {
+      errors.push({ fieldTree: this.nameForm.slug, kind: 'taken', message: slugLines.join('. ') });
+    }
+    return errors.length > 0 ? errors : undefined;
+  }
+}
+
+function messageLines(error: HttpErrorResponse): string[] {
+  const body = error.error as { message?: unknown } | null;
+  const message = body?.message;
+  if (typeof message === 'string' && message.length > 0) {
+    return [message];
+  }
+  if (Array.isArray(message)) {
+    return message.filter((line): line is string => typeof line === 'string' && line.length > 0);
+  }
+  return [];
 }
 
 function countOf(postCount: number): string {
