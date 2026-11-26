@@ -238,7 +238,6 @@ export class BlogTermList {
     return undefined;
   }
 
-  /** A slug line stays on the slug. A name line, or a 409 that never mentions a slug, stays on the name. */
   private termRefusals(error: HttpErrorResponse): TreeValidationResult {
     const lines = messageLines(error);
     const slugLines = lines.filter((line) => /\bslug\b/i.test(line));

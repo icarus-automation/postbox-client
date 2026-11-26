@@ -19,7 +19,6 @@ export function slugify(text: string): string {
     .replace(/-+$/, '');
 }
 
-/** Why a typed slug cannot be saved. Blank is allowed, because the API can make one. */
 export function slugProblem(value: string): string | null {
   const slug = value.trim();
   if (slug.length === 0) {

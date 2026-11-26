@@ -303,7 +303,6 @@ describe('PostEditor', () => {
       expect(section.querySelector('label')?.getAttribute('for')).toBe(anchorBox().id);
       expect(section.textContent).toContain('Leave this blank and it is made from the heading.');
 
-      // An empty heading is already refused, so the text has to be there before a save can go out.
       type(headingBox(), 'Summer hours');
       await harness.fixture.whenStable();
 

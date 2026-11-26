@@ -102,10 +102,6 @@ export function draftProblem(body: SavePostBody): string | null {
   return null;
 }
 
-/**
- * Anchor refusals from a failed save, keyed by heading id. A line names a block by index,
- * or, with no index, the only heading. Any other line is ignored.
- */
 export function headingAnchorRefusals(error: unknown, blocks: readonly Block[]): ReadonlyMap<string, string> {
   const refusals = new Map<string, string>();
   if (!(error instanceof HttpErrorResponse)) {
@@ -142,7 +138,6 @@ function normalizeBlock(block: Block): Block {
   return block;
 }
 
-/** `blocks.0.anchor` or `blocks[0].anchor`. Null when the line names no index. */
 function anchorIndex(line: string): number | null {
   const match = /blocks\.(\d+)\.anchor\b|blocks\[(\d+)\]\.anchor\b/.exec(line);
   if (!match) {

@@ -23,7 +23,6 @@ export class HeadingBlock {
     return block?.kind === 'heading' ? block : null;
   });
 
-  /** The anchor the page will use, once it has been trimmed. Blank means the API makes one. */
   protected readonly anchorPreview = computed(() => {
     const anchor = this.block()?.anchor?.trim() ?? '';
     return anchor.length > 0 ? `#${anchor}` : '';

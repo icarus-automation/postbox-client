@@ -21,7 +21,6 @@ import { blankPost, followingSlug, saveBody } from '../post.document';
 export class PostDraft {
   private readonly current = signal<EditorPost | null>(null);
   private readonly saved = signal<EditorPost | null>(null);
-  /** The API's refusal of a heading anchor, by block id. Cleared when that anchor changes or a save succeeds. */
   private readonly anchorRefusals = signal<ReadonlyMap<string, string>>(new Map());
   private loadedId: string | null = null;
 
