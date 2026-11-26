@@ -47,7 +47,7 @@ export type Block =
       doc: ProseDoc;
       html: string;
     }
-  | { id: string; kind: 'heading'; level: HeadingLevel; text: string }
+  | { id: string; kind: 'heading'; level: HeadingLevel; text: string; anchor?: string }
   | { id: string; kind: 'divider' };
 
 export interface EditorPost {

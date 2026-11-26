@@ -18,3 +18,18 @@ export function slugify(text: string): string {
     .slice(0, SLUG_MAX_LENGTH)
     .replace(/-+$/, '');
 }
+
+/** Why a typed slug cannot be saved. Blank is allowed, because the API can make one. */
+export function slugProblem(value: string): string | null {
+  const slug = value.trim();
+  if (slug.length === 0) {
+    return null;
+  }
+  if (slug.length > SLUG_MAX_LENGTH) {
+    return `Use ${SLUG_MAX_LENGTH} characters or fewer.`;
+  }
+  if (!SLUG_PATTERN.test(slug)) {
+    return 'Use lowercase letters, numbers, and single hyphens.';
+  }
+  return null;
+}

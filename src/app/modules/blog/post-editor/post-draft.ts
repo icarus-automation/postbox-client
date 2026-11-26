@@ -21,6 +21,8 @@ import { blankPost, followingSlug, saveBody } from '../post.document';
 export class PostDraft {
   private readonly current = signal<EditorPost | null>(null);
   private readonly saved = signal<EditorPost | null>(null);
+  /** The API's refusal of a heading anchor, by block id. Cleared when that anchor changes or a save succeeds. */
+  private readonly anchorRefusals = signal<ReadonlyMap<string, string>>(new Map());
   private loadedId: string | null = null;
 
   readonly post = this.current.asReadonly();
@@ -63,6 +65,26 @@ export class PostDraft {
     this.loadedId = post.id;
     this.current.set(structuredClone(post));
     this.saved.set(structuredClone(post));
+    this.anchorRefusals.set(new Map());
+  }
+
+  anchorRefusal(id: string): string | null {
+    return this.anchorRefusals().get(id) ?? null;
+  }
+
+  setAnchorRefusals(refusals: ReadonlyMap<string, string>): void {
+    this.anchorRefusals.set(refusals);
+  }
+
+  clearAnchorRefusal(id: string): void {
+    this.anchorRefusals.update((current) => {
+      if (!current.has(id)) {
+        return current;
+      }
+      const next = new Map(current);
+      next.delete(id);
+      return next;
+    });
   }
 
   /**
